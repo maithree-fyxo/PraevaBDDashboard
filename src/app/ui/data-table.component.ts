@@ -41,7 +41,7 @@ import { Component, Input } from '@angular/core';
 export class DataTableComponent {
   @Input() columns: string[] = [];
   @Input() rows: string[][] = [];
-  isNum(col: string) { return /meetings|leads|opps|days|rate|active|attendees|contacts|touches|%/i.test(col) && !/company|opportunity|member|role|sector|owner|contact/i.test(col); }
+  isNum(col: string) { return /meetings|leads|opps|days|rate|active|attendees|contacts|touches|conv|follow-up|%/i.test(col) && !/company|opportunity|member|role|sector|owner|contact/i.test(col); }
   isStatus(col: string) { return /outcome|status/i.test(col); }
   slug(v: string) { return v.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, ''); }
 }

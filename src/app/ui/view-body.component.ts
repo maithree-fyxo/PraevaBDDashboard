@@ -3,13 +3,15 @@ import { ViewDef } from '../core/data.service';
 import { StatCardComponent } from './stat-card.component';
 import { ChartComponent } from './chart.component';
 import { TablePanelComponent } from './table-panel.component';
+import { NoticeComponent } from './notice.component';
 
 @Component({
   selector: 'app-view-body',
   standalone: true,
-  imports: [StatCardComponent, ChartComponent, TablePanelComponent],
+  imports: [StatCardComponent, ChartComponent, TablePanelComponent, NoticeComponent],
   template: `
     @if (def) {
+      <app-notice [notice]="def.notice" />
       <div class="stat-row">
         @for (k of def.kpis; track k.label) {
           <app-stat-card [label]="k.label" [value]="k.value" [delta]="k.delta" [trend]="k.trend"

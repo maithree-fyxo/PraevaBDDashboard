@@ -29,6 +29,6 @@ import { Point } from '../core/data.service';
 export class BarChartComponent {
   @Input() points: Point[] = [];
   @Input() unit?: string;
-  get max() { return Math.max(1, ...this.points.map((p) => p.value)); }
+  get max() { return this.unit === '%' ? 100 : Math.max(1, ...this.points.map((p) => p.value)); }
   pct(v: number) { return Math.round((v / this.max) * 100); }
 }

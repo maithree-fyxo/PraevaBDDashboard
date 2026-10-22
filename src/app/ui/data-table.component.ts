@@ -7,12 +7,12 @@ import { Component, Input } from '@angular/core';
     <div class="tbl-wrap">
       <table class="tbl">
         <thead>
-          <tr>@for (c of columns; track c) { <th [class.num]="isNum(c)">{{ c }}</th> }</tr>
+          <tr>@for (c of columns; track c; let i = $index) { <th [class.num]="numCol(i)">{{ c }}</th> }</tr>
         </thead>
         <tbody>
           @for (r of rows; track r) {
             <tr>@for (cell of r; track $index) {
-              <td [class.num]="isNum(columns[$index])">
+              <td [class.num]="numCol($index)">
                 @if (isStatus(columns[$index])) {
                   <span class="tag" [attr.data-s]="slug(cell)">{{ cell }}</span>
                 } @else { {{ cell }} }
@@ -35,13 +35,19 @@ import { Component, Input } from '@angular/core';
       font-size: 11.5px; font-weight: 600; background: var(--surface-2); color: var(--text-muted); }
     .tag[data-s="qualified-lead"], .tag[data-s="active"] { background: var(--accent-soft); color: var(--accent-strong); }
     .tag[data-s="dormant"] { background: color-mix(in srgb, var(--neg) 14%, transparent); color: var(--neg); }
-    .tag[data-s="stale"], .tag[data-s="no-follow-up"] { background: color-mix(in srgb, var(--text-faint) 18%, transparent); color: var(--text-muted); }
+    .tag[data-s="recent"], .tag[data-s="offer"], .tag[data-s="final-interviews"] { background: var(--accent-soft); color: var(--accent-strong); }
+    .tag[data-s="lapsing"] { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
+    .tag[data-s="lapsed"] { background: color-mix(in srgb, var(--neg) 14%, transparent); color: var(--neg); }
+    .tag[data-s="stale"], .tag[data-s="no-follow-up"], .tag[data-s="not-yet-met"] { background: color-mix(in srgb, var(--text-faint) 18%, transparent); color: var(--text-muted); }
   `],
 })
 export class DataTableComponent {
   @Input() columns: string[] = [];
   @Input() rows: string[][] = [];
-  isNum(col: string) { return /meetings|leads|opps|days|rate|active|attendees|contacts|touches|conv|follow-up|%/i.test(col) && !/company|opportunity|member|role|sector|owner|contact/i.test(col); }
-  isStatus(col: string) { return /outcome|status/i.test(col); }
+  /** A column is numeric when every cell looks like a number, %, £ amount or a dash. */
+  numCol(i: number) {
+    return this.rows.length > 0 && this.rows.every((r) => /^(£?[\d.,]+[km%]?|[—–-])$/.test((r[i] ?? '').trim()));
+  }
+  isStatus(col: string) { return /outcome|status|stage/i.test(col); }
   slug(v: string) { return v.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, ''); }
 }

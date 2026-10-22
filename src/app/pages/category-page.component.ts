@@ -20,11 +20,11 @@ import { ViewBodyComponent } from '../ui/view-body.component';
               (click)="selectTab(t.key)">{{ t.label }}</button>
           }
         </div>
-        @if (cat.filtered) {
+        @if (filterDef(); as fd) {
           <label class="filter">
-            <span>{{ filterLabel() }}</span>
-            <select [value]="selection()" (change)="onSelect($any($event.target).value)">
-              @for (opt of options(); track opt) { <option [value]="opt">{{ opt }}</option> }
+            <span>{{ fd.label }}</span>
+            <select (change)="onSelect($any($event.target).value)">
+              @for (opt of options(); track opt) { <option [value]="opt" [selected]="opt === selection()">{{ opt }}</option> }
             </select>
           </label>
         }
@@ -74,23 +74,18 @@ export class CategoryPageComponent {
     return tabs[0]?.key ?? '';
   });
 
-  options = computed(() => this.data.optionsFor(this.activeKey()));
-  filterLabel = computed(() => {
-    const k = this.activeKey();
-    return k === 'team' ? 'Team' : k === 'individual' ? 'Individual' : k === 'sector-view' ? 'Sector' : 'Filter';
-  });
+  filterDef = computed(() => this.data.filterFor(this.activeKey()));
+  options = computed(() => this.filterDef()?.options ?? []);
   selection = computed(() => {
     const opts = this.options();
     const sel = this.manualSel();
     return sel && opts.includes(sel) ? sel : (opts[0] ?? '');
   });
 
-  body = computed<ViewDef>(() =>
-    this.category().filtered ? this.data.getFiltered(this.activeKey(), this.selection()) : this.data.getView(this.activeKey()));
+  body = computed<ViewDef>(() => this.data.view(this.activeKey(), this.selection()));
 
   selectTab(key: string) {
     this.manualKey.set(key);
-    this.manualSel.set(null); // reset filter to the new tab's first option
     this.router.navigate([], { relativeTo: this.route, queryParams: { tab: key }, queryParamsHandling: 'merge', replaceUrl: true });
   }
   onSelect(value: string) { this.manualSel.set(value); }

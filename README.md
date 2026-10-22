@@ -1,9 +1,7 @@
 # BD Dashboard — Angular prototype
 
 A front-end prototype of the Business Development dashboard for **Praeva Partners**,
-built in **Angular 17** (standalone components). It covers the **current-phase**
-requirements only; fund / portfolio-company / PE-backed views (requirements 4, 7, 8, 21)
-are deferred to a later phase and are intentionally not included.
+built in **Angular 17** (standalone components, signals).
 
 All figures are **mock data** held in `DataService` — there is no backend. The intent is
 to agree layout, navigation and visual language before wiring up the Ezekia API.
@@ -15,69 +13,60 @@ npm install
 npm start
 ```
 
-Then open http://localhost:4200. Requires Node 18.13+ (or 20+).
+Then open http://localhost:4200. Requires Node 18.13+ (or 20+). Deployment to GitHub Pages
+runs automatically through `.github/workflows/deploy.yml` on every push to `main`.
 
-## No-build preview
-
-If you just want to see the look without installing anything, open **`preview.html`**
-directly in a browser. It's a static mirror of the Overview page (light/dark toggle works).
-The real, navigable app is the Angular project.
+`preview.html` is a static mirror of the earlier Overview only; the navigable app is the
+Angular project.
 
 ## What's in it
 
-- **Left sidebar** grouped into Overview, Meeting activity, Follow-up & outcomes,
-  Opportunity pipeline, and Views — one destination per current-phase requirement.
-- **Light & dark themes**, toggled top-right, remembered per browser, and defaulting to
-  the OS preference on first load.
-- **Clean sans-serif** type (Plus Jakarta Sans) with a disciplined pink accent used only
-  for emphasis, active state, chart series and status tags.
-- Reusable **stat cards**, **bar / line / donut charts** (dependency-free inline SVG/CSS),
-  and **data tables** with status tags.
-
-## Requirement → screen
-
-| # | Requirement | Route |
-|---|-------------|-------|
-| 1, 23 | BD meeting volume + activity/outcome overview | `/` |
-| 2 | Meetings by originator | `/originator` |
-| 3 | Meeting attendees | `/attendees` |
-| 5 | Meetings by role | `/roles` |
-| 6 | Meetings by sector | `/sectors` |
-| 9 | Follow-up activity | `/follow-up` |
-| 10 | Meetings with no follow-up | `/no-activity` |
-| 11 | Follow-up effectiveness | `/effectiveness` |
-| 12 | Leads generated | `/leads` |
-| 13 | Opportunity pipeline | `/pipeline` |
-| 17 | Active opportunities | `/active` |
-| 15 | Days in stage | `/days-in-stage` |
-| 14 | Dormant opportunities | `/dormant` |
-| 16 | Stale opportunities | `/stale` |
-| 18 | Team view | `/team` |
-| 19 | Individual view | `/individual` |
-| 20 | Sector view | `/sector-view` |
-| 22 | Company view | `/company` |
+- **Sidebar** with eight categories: Overview, Meeting activity, Follow-up & outcomes,
+  Opportunity pipeline, Target funds, Cross-sell, Delivery & budget, and Views. Sub-views are
+  tabs within each category page.
+- **Global filters** (shown on BD activity pages): Company type, Role classification,
+  Seniority (Management only), Primary sector and cascading Subsector, plus the Period
+  selector in the top bar.
+  - Company type = counterparty company's Relationship Type custom field (each value its own
+    category, plus Uncoded).
+  - Role classification + seniority = the person's Current Status career, mapped to a role
+    class (most senior wins).
+  - Primary sector / Subsector = company custom fields; Subsector options cascade from Sector.
+- **Overview**: KPIs, meetings by company type and by role classification, the company type ×
+  role classification matrix, a data-quality panel, and a delivery and budget snapshot.
+- **Target funds**: last contact by fund, funds needing contact, coverage by owner, at Praeva,
+  team or individual level.
+- **Cross-sell**: live work across funds and their portfolio companies, and meeting → lead
+  conversion by team and company (pending HelloSky relationships).
+- **Delivery & budget**: delivery summary, budget against invoiced / paid / forecast, and search
+  work in progress by milestone.
+- **Views**: Team, Individual, Sector (driven by the global sector filters) and Company.
+- Pages that depend on unconfirmed decisions or pending data carry an on-screen
+  **Assumption** or **Waiting on data** note.
 
 ## Structure
 
 ```
 src/
-  styles.css                 Theme tokens (light/dark) + base styles
-  index.html                 Loads the Plus Jakarta Sans web font
+  styles.css                    Theme tokens (light/dark) + base styles
   app/
     core/
-      theme.service.ts       Light/dark signal, persistence, OS preference
-      nav.ts                 Sidebar groups + items (maps to requirements)
-      data.service.ts        Mock data — the single place to swap in real data
-    ui/                      stat-card, bar/line/donut charts, table, panels
+      reference.ts              Dimension values (company types, roles, sectors…) + mock reference data
+      filter.service.ts         Global filter state (signals) and the filtered company type × role matrix
+      scale.ts                  Scales illustrative views to the active filters
+      data.service.ts           Mock data and view builders — the single place to swap in real data
+      nav.ts                    Sidebar categories and tabs
+      theme.service.ts          Light/dark signal, persistence, OS preference
+    ui/                         stat card, charts, tables, filter bar, matrix, data-quality panel, notice
     pages/
-      overview.component.ts  Bespoke Overview (req 1 + 23)
-      view-page.component.ts Generic, data-driven page for the other views
-    app.component.ts         Shell: sidebar + top bar + theme toggle + outlet
-    app.routes.ts            One route per requirement view
+      overview.component.ts     Overview
+      category-page.component.ts  Tabbed page used by every other category
+    app.component.ts            Shell: sidebar, top bar, filter bar, outlet
+    app.routes.ts               One route per category
 ```
 
 ## Swapping in real data
 
-Replace the bodies in `DataService` with calls to your Ezekia-backed API. The view
-contracts (`Kpi`, `Chart`, `Table`, `ViewDef`) are the shapes each screen expects, so the
-components don't need to change — only the source of the numbers.
+Replace the bodies in `DataService` and `FilterService` with calls to the Ezekia-backed API.
+The view contracts (`Kpi`, `Chart`, `Table`, `Notice`, `ViewDef`) are the shapes each screen
+expects, so the components don't need to change — only the source of the numbers.

@@ -5,11 +5,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs';
 import { CATEGORIES, categoryByPath } from './core/nav';
 import { ThemeService } from './core/theme.service';
+import { FilterService } from './core/filter.service';
+import { PERIODS } from './core/reference';
+import { FilterBarComponent } from './ui/filter-bar.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, FilterBarComponent],
   template: `
     <div class="shell">
       <aside class="side">
@@ -28,7 +31,7 @@ import { ThemeService } from './core/theme.service';
           }
         </nav>
 
-        <div class="side__foot">Prototype · current phase</div>
+        <div class="side__foot">Prototype · mock data</div>
       </aside>
 
       <div class="main">
@@ -39,9 +42,8 @@ import { ThemeService } from './core/theme.service';
           </div>
           <div class="topbar__actions">
             <label class="period">
-              <select>
-                <option>Last 90 days</option><option>Last 30 days</option>
-                <option>This quarter</option><option>Year to date</option>
+              <select aria-label="Period" (change)="filters.period.set($any($event.target).value)">
+                @for (p of periods; track p) { <option [value]="p" [selected]="p === filters.period()">{{ p }}</option> }
               </select>
             </label>
             <button class="toggle" type="button" (click)="theme.toggle()"
@@ -59,6 +61,7 @@ import { ThemeService } from './core/theme.service';
           </div>
         </header>
 
+        @if (dims()) { <app-filter-bar /> }
         <main class="content"><router-outlet /></main>
       </div>
     </div>
@@ -110,6 +113,8 @@ import { ThemeService } from './core/theme.service';
 export class AppComponent {
   categories = CATEGORIES;
   theme = inject(ThemeService);
+  filters = inject(FilterService);
+  periods = PERIODS;
   private router = inject(Router);
   private san = inject(DomSanitizer);
   private iconCache = new Map<string, SafeHtml>();
@@ -130,6 +135,7 @@ export class AppComponent {
 
   title = computed(() => this.current().label);
   subtitle = computed(() => this.current().subtitle);
+  dims = computed(() => !!this.current().dims);
 
   iconHtml(inner: string): SafeHtml {
     let cached = this.iconCache.get(inner);

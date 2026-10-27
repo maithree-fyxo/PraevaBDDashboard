@@ -21,6 +21,10 @@ Angular project.
 
 ## What's in it
 
+- **Workspace switcher** under the Praeva logo: Business Development, Finance and Delivery. Finance
+  and Delivery show a "Not yet scoped" page. The logo turns white in dark mode.
+- **Colour:** pink stays the main accent (navigation, primary card, buttons). Charts, cards and status
+  tags use a wider palette defined in `styles.css` (`--c-*` tokens) and `ui/palette.ts`.
 - **Sidebar** with eight categories: Overview, Meeting activity, Follow-up & outcomes,
   Opportunity pipeline, Target funds, Cross-sell, Delivery & budget, and Views. Sub-views are
   tabs within each category page.
@@ -33,7 +37,7 @@ Angular project.
     class (most senior wins).
   - Primary sector / Subsector = company custom fields; Subsector options cascade from Sector.
 - **Overview**: KPIs, meetings by company type and by role classification, the company type ×
-  role classification matrix, a data-quality panel, and a delivery and budget snapshot.
+  role classification matrix, and a delivery and budget snapshot. A last updated time shows in the top bar.
 - **Target funds**: last contact by fund, funds needing contact, coverage by owner, at Praeva,
   team or individual level.
 - **Cross-sell**: live work across funds and their portfolio companies, and meeting → lead
@@ -41,8 +45,8 @@ Angular project.
 - **Delivery & budget**: delivery summary, budget against invoiced / paid / forecast, and search
   work in progress by milestone.
 - **Views**: Team, Individual, Sector (driven by the global sector filters) and Company.
-- Pages that depend on unconfirmed decisions or pending data carry an on-screen
-  **Assumption** or **Waiting on data** note.
+- BD meetings and originators come from user-specific BD tags (for example "BD - Mark Sherman").
+  The Cross-sell page carries a **Waiting on data** note until HelloSky relationships are in Ezekia.
 
 ## Structure
 
@@ -57,7 +61,7 @@ src/
       data.service.ts           Mock data and view builders — the single place to swap in real data
       nav.ts                    Sidebar categories and tabs
       theme.service.ts          Light/dark signal, persistence, OS preference
-    ui/                         stat card, charts, tables, filter bar, matrix, data-quality panel, notice
+    ui/                         stat card, charts, tables, filter bar, matrix, notice
     pages/
       overview.component.ts     Overview
       category-page.component.ts  Tabbed page used by every other category

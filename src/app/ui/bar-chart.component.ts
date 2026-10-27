@@ -1,16 +1,17 @@
 import { Component, Input } from '@angular/core';
 import { Point } from '../core/data.service';
+import { seriesColor } from './palette';
 
 @Component({
   selector: 'app-bar-chart',
   standalone: true,
   template: `
     <div class="bars">
-      @for (p of points; track p.label) {
+      @for (p of points; track p.label; let i = $index) {
         <div class="row">
           <span class="row__label" [title]="p.label">{{ p.label }}</span>
           <span class="row__track">
-            <span class="row__fill" [style.width.%]="pct(p.value)"></span>
+            <span class="row__fill" [style.width.%]="pct(p.value)" [style.background]="multi ? seriesColor(p.label, i) : (color || 'var(--accent)')"></span>
           </span>
           <span class="row__val num">{{ p.value }}{{ unit === '%' ? '%' : '' }}</span>
         </div>
@@ -29,6 +30,9 @@ import { Point } from '../core/data.service';
 export class BarChartComponent {
   @Input() points: Point[] = [];
   @Input() unit?: string;
+  @Input() color?: string;
+  @Input() multi = false;
+  seriesColor = seriesColor;
   get max() { return this.unit === '%' ? 100 : Math.max(1, ...this.points.map((p) => p.value)); }
   pct(v: number) { return Math.round((v / this.max) * 100); }
 }

@@ -8,16 +8,16 @@ interface XY { x: number; y: number; label: string; value: number; }
   template: `
     <svg [attr.viewBox]="'0 0 ' + W + ' ' + H" preserveAspectRatio="none" class="chart" role="img">
       <defs>
-        <linearGradient id="lc-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.22" />
-          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0" />
+        <linearGradient [attr.id]="gid" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" [attr.stop-color]="color" stop-opacity="0.22" />
+          <stop offset="100%" [attr.stop-color]="color" stop-opacity="0" />
         </linearGradient>
       </defs>
-      <path [attr.d]="area" fill="url(#lc-fill)" />
-      <polyline [attr.points]="line" fill="none" stroke="var(--accent)" stroke-width="2.5"
+      <path [attr.d]="area" [attr.fill]="'url(#' + gid + ')'" />
+      <polyline [attr.points]="line" fill="none" [attr.stroke]="color" stroke-width="2.5"
         stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
       @for (pt of xy; track pt.label) {
-        <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3.5" fill="var(--surface)" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" />
+        <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3.5" fill="var(--surface)" [attr.stroke]="color" stroke-width="2" vector-effect="non-scaling-stroke" />
       }
     </svg>
     <div class="xlabels">
@@ -33,6 +33,8 @@ interface XY { x: number; y: number; label: string; value: number; }
 })
 export class LineChartComponent {
   readonly W = 600; readonly H = 200;
+  @Input() color = 'var(--accent)';
+  readonly gid = 'lc-' + Math.random().toString(36).slice(2, 9);
   private readonly pad = 12;
   @Input() set points(v: { label: string; value: number }[]) { this._p = v; }
   private _p: { label: string; value: number }[] = [];

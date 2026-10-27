@@ -8,19 +8,22 @@ import { ThemeService } from './core/theme.service';
 import { FilterService } from './core/filter.service';
 import { PERIODS } from './core/reference';
 import { FilterBarComponent } from './ui/filter-bar.component';
+import { WorkspaceSwitcherComponent } from './ui/workspace-switcher.component';
+import { WorkspaceService } from './core/workspace.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, FilterBarComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, FilterBarComponent, WorkspaceSwitcherComponent],
   template: `
     <div class="shell">
       <aside class="side">
         <div class="brand">
-          <span class="brand__mark">BD</span>
-          <span class="brand__text"><strong>Praeva Partners</strong><small>Business development</small></span>
+          <img class="brand__logo" src="assets/praeva-logo.svg" alt="Praeva" />
+          <app-workspace-switcher />
         </div>
 
+        @if (ws.scoped()) {
         <nav class="nav">
           @for (cat of categories; track cat.path) {
             <a class="nav__item" [routerLink]="'/' + cat.path"
@@ -30,6 +33,9 @@ import { FilterBarComponent } from './ui/filter-bar.component';
             </a>
           }
         </nav>
+        } @else {
+          <div class="nav nav--empty">{{ ws.current() }} pages will appear here once scoped.</div>
+        }
 
         <div class="side__foot">Prototype · mock data</div>
       </aside>
@@ -37,15 +43,18 @@ import { FilterBarComponent } from './ui/filter-bar.component';
       <div class="main">
         <header class="topbar">
           <div class="topbar__title">
-            <h1>{{ title() }}</h1>
-            <p>{{ subtitle() }}</p>
+            <h1>{{ ws.scoped() ? title() : ws.current() }}</h1>
+            <p>{{ ws.scoped() ? subtitle() : 'This dashboard has not been scoped yet.' }}</p>
           </div>
           <div class="topbar__actions">
+            @if (ws.scoped()) {
+            <span class="updated">Last updated 26 Oct, 09:00</span>
             <label class="period">
               <select aria-label="Period" (change)="filters.period.set($any($event.target).value)">
                 @for (p of periods; track p) { <option [value]="p" [selected]="p === filters.period()">{{ p }}</option> }
               </select>
             </label>
+            }
             <button class="toggle" type="button" (click)="theme.toggle()"
                     [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'">
               @if (theme.theme() === 'dark') {
@@ -61,19 +70,37 @@ import { FilterBarComponent } from './ui/filter-bar.component';
           </div>
         </header>
 
-        @if (dims()) { <app-filter-bar /> }
-        <main class="content"><router-outlet /></main>
+        @if (ws.scoped()) {
+          @if (dims()) { <app-filter-bar /> }
+          <main class="content"><router-outlet /></main>
+        } @else {
+          <main class="content">
+            <section class="unscoped">
+              <span class="unscoped__badge">Not yet scoped</span>
+              <h2>{{ ws.current() }} dashboard</h2>
+              <p>The {{ ws.current() }} dashboard hasn’t been scoped yet. Its pages, measures and data sources will be agreed in a later phase.</p>
+              <button type="button" (click)="ws.current.set('Business Development')">Back to Business Development</button>
+            </section>
+          </main>
+        }
       </div>
     </div>
   `,
   styles: [`
     .shell { display: grid; grid-template-columns: 264px 1fr; height: 100vh; overflow: hidden; }
     .side { display: flex; flex-direction: column; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; }
-    .brand { display: flex; align-items: center; gap: 12px; padding: 20px 20px 18px; }
-    .brand__mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px;
-      background: var(--accent); color: var(--on-accent); font-weight: 800; font-size: 13px; letter-spacing: -.02em; }
-    .brand__text { display: flex; flex-direction: column; line-height: 1.2; }
-    .brand__text strong { font-size: 14px; } .brand__text small { font-size: 11.5px; color: var(--text-faint); }
+    .brand { display: flex; flex-direction: column; align-items: stretch; gap: 12px; padding: 22px 20px 16px; }
+    .brand__logo { display: block; width: 116px; height: auto; margin-left: 2px; }
+    :host-context([data-theme="dark"]) .brand__logo { filter: brightness(0) invert(1); }
+    .nav--empty { font-size: 12.5px; color: var(--text-faint); padding: 12px 20px; line-height: 1.5; }
+    .unscoped { max-width: 560px; margin: 48px auto; text-align: center; background: var(--surface); border: 1px dashed var(--border-strong);
+      border-radius: var(--r-lg); padding: 40px 32px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .unscoped__badge { font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: var(--r-pill);
+      background: color-mix(in srgb, var(--c-amber) 16%, transparent); color: color-mix(in srgb, var(--c-amber) 75%, var(--text)); }
+    .unscoped h2 { font-size: 20px; }
+    .unscoped p { font-size: 13.5px; color: var(--text-muted); line-height: 1.6; }
+    .unscoped button { margin-top: 8px; appearance: none; border: 1px solid var(--accent-line); background: var(--accent-soft);
+      color: var(--accent-strong); font: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: var(--r-sm); cursor: pointer; }
 
     .nav { flex: 1; padding: 6px 12px; }
     .nav__item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--r-sm);
@@ -92,6 +119,7 @@ import { FilterBarComponent } from './ui/filter-bar.component';
     .topbar__title h1 { font-size: 20px; }
     .topbar__title p { font-size: 13px; color: var(--text-muted); margin-top: 3px; max-width: 74ch; }
     .topbar__actions { display: flex; align-items: center; gap: 10px; }
+    .updated { font-size: 12px; color: var(--text-faint); white-space: nowrap; }
     .period select { appearance: none; font: inherit; font-size: 13px; color: var(--text);
       background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm);
       padding: 8px 30px 8px 12px; cursor: pointer;
@@ -114,6 +142,7 @@ export class AppComponent {
   categories = CATEGORIES;
   theme = inject(ThemeService);
   filters = inject(FilterService);
+  ws = inject(WorkspaceService);
   periods = PERIODS;
   private router = inject(Router);
   private san = inject(DomSanitizer);

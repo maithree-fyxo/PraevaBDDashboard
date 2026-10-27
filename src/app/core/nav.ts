@@ -29,7 +29,7 @@ export const CATEGORIES: Category[] = [
     ]},
 
   { label: 'Follow-up & outcomes', path: 'follow-up-outcomes', icon: I.reply, dims: true,
-    subtitle: 'What happens after meetings — follow-up, effectiveness and leads.',
+    subtitle: 'What happens after meetings: follow-up, effectiveness and leads.',
     tabs: [
       { label: 'Follow-up activity', key: 'follow-up' }, { label: 'No follow-up', key: 'no-activity' },
       { label: 'Effectiveness', key: 'effectiveness' }, { label: 'Leads generated', key: 'leads' },
@@ -44,7 +44,7 @@ export const CATEGORIES: Category[] = [
     ]},
 
   { label: 'Target funds', path: 'target-funds', icon: I.target,
-    subtitle: 'Coverage of the target fund list — last contact, funds not yet met and coverage by owner.',
+    subtitle: 'Coverage of the target fund list: last contact, funds not yet met and coverage by owner.',
     tabs: [
       { label: 'Coverage', key: 'fund-coverage' }, { label: 'Needs contact', key: 'fund-not-met' },
       { label: 'By owner', key: 'fund-owners' },

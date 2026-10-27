@@ -21,7 +21,7 @@ import { Component, Input } from '@angular/core';
                 <th scope="row">{{ rows[i] }}</th>
                 @for (v of row; track j; let j = $index) {
                   <td [style.background]="shade(v, rowSum(row))" [class.is-strong]="share(v, rowSum(row)) >= 45">
-                    {{ empty(row) ? '–' : share(v, rowSum(row)) + '%' }}
+                    {{ empty(row) ? '-' : share(v, rowSum(row)) + '%' }}
                   </td>
                 }
                 <td class="tot num">{{ round(rowSum(row)) }}</td>
@@ -43,7 +43,7 @@ import { Component, Input } from '@angular/core';
     th { font-size: 11.5px; font-weight: 600; color: var(--text-faint); text-align: center; padding: 4px 6px; white-space: nowrap; }
     tbody th { text-align: left; color: var(--text-muted); font-weight: 500; }
     td { text-align: center; padding: 8px 6px; border-radius: 6px; font-variant-numeric: tabular-nums; color: var(--text); }
-    td.is-strong { color: var(--accent-strong); font-weight: 700; }
+    td.is-strong { color: var(--text); font-weight: 700; }
     .tot { color: var(--text-muted); font-weight: 600; background: none; }
   `],
 })
@@ -58,6 +58,6 @@ export class MatrixComponent {
   round(v: number) { return Math.round(v); }
   shade(v: number, t: number) {
     const s = this.share(v, t);
-    return Math.round(t) ? `color-mix(in srgb, var(--accent) ${Math.round(4 + s * 0.42)}%, transparent)` : 'var(--surface-2)';
+    return Math.round(t) ? `color-mix(in srgb, var(--c-indigo) ${Math.round(4 + s * 0.4)}%, transparent)` : 'var(--surface-2)';
   }
 }

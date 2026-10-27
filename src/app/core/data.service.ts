@@ -8,7 +8,7 @@ import {
 
 export interface Kpi { label: string; value: string; delta?: string; trend?: 'up' | 'down' | 'flat'; }
 export interface Point { label: string; value: number; }
-export interface Chart { kind: 'bar' | 'line' | 'donut'; title: string; unit?: string; points: Point[]; }
+export interface Chart { kind: 'bar' | 'line' | 'donut'; title: string; unit?: string; points: Point[]; /** one colour per bar */ multi?: boolean; }
 export interface Table { title: string; columns: string[]; rows: string[][]; }
 export interface Notice { kind: 'assumption' | 'pending'; text: string; }
 export interface ViewDef { title: string; subtitle: string; kpis: Kpi[]; chart: Chart; table: Table; notice?: Notice; }
@@ -18,11 +18,11 @@ const MONTHS = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
 const CO_NAMES = ['Aldgate Capital', 'Northwind Partners', 'Meridian Growth', 'Vantage Holdings',
   'Brightline Ventures', 'Kestrel Foods', 'Cedar & Vale', 'Halcyon Group'];
 const ROLES = ['CFO', 'CEO', 'Chair', 'Investment Director'];
-const OUTCOMES = ['Qualified lead', 'Active', 'Further contact', 'Introduction'];
+const OUTCOMES = ['Qualified lead', 'Active', 'Dormant', 'No follow-up'];
 const DATES = ['5 Sep', '29 Aug', '22 Aug', '14 Aug'];
 
 function conv(meetings: number, leads: number): string {
-  return meetings ? Math.round((leads / meetings) * 100) + '%' : '—';
+  return meetings ? Math.round((leads / meetings) * 100) + '%' : '-';
 }
 function trend(kind: 'line', title: string, unit: string, values: number[]): Chart {
   return { kind: 'line', title, unit, points: values.map((v, i) => ({ label: MONTHS[i], value: v })) };
@@ -43,9 +43,9 @@ const FUNDS: Fund[] = [
   { name: 'Brightline Ventures', owner: 'Priya Nair', last: '30 Jun', days: 79, by: 'Marcus Bell', meetings: 1 },
   { name: 'Larkspur Equity', owner: 'Daniel Osei', last: '3 Jun', days: 106, by: 'Daniel Osei', meetings: 1 },
   { name: 'Solstice Capital', owner: 'Marcus Bell', last: '2 May', days: 138, by: 'Marcus Bell', meetings: 1 },
-  { name: 'Ironbridge Equity', owner: 'Daniel Osei', last: null, days: null, by: '—', meetings: 0 },
-  { name: 'Harrowgate Capital', owner: 'Sofia Marchetti', last: null, days: null, by: '—', meetings: 0 },
-  { name: 'Oakhurst Investors', owner: 'Marcus Bell', last: null, days: null, by: '—', meetings: 0 },
+  { name: 'Ironbridge Equity', owner: 'Daniel Osei', last: null, days: null, by: '-', meetings: 0 },
+  { name: 'Harrowgate Capital', owner: 'Sofia Marchetti', last: null, days: null, by: '-', meetings: 0 },
+  { name: 'Oakhurst Investors', owner: 'Marcus Bell', last: null, days: null, by: '-', meetings: 0 },
 ];
 function contactStatus(days: number | null): string {
   if (days === null) return 'Not yet met';
@@ -76,12 +76,12 @@ const ASSIGNMENTS: Assignment[] = [
   { name: 'COO search', client: 'Brightwater Clinics', owner: 'Lena Fischer', completion: 61, end: 'Dec 2026', ll: 35, sl: 5, int: 4, off: 0, next: 'Final interviews' },
   { name: 'Chair search', client: 'Aurora Energy', owner: 'James Whitlock', completion: 22, end: 'Feb 2027', ll: 31, sl: 0, int: 0, off: 0, next: 'Shortlist' },
   { name: 'CFO search', client: 'Halcyon Group', owner: 'Priya Nair', completion: 40, end: 'Jan 2027', ll: 44, sl: 5, int: 0, off: 0, next: 'First interviews' },
-  { name: 'NED search', client: 'Cedar & Vale', owner: 'Marcus Bell', completion: 15, end: 'Mar 2027', ll: 0, sl: 0, int: 0, off: 0, next: 'Longlist' },
+  { name: 'NED search', client: 'Cedar & Vale', owner: 'Marcus Bell', completion: 15, end: 'Mar 2027', ll: 24, sl: 0, int: 0, off: 0, next: 'Shortlist' },
 ];
 function milestone(a: Assignment): string {
-  if (a.off) return 'Offer'; if (a.int) return 'Interviews'; if (a.sl) return 'Shortlist'; if (a.ll) return 'Longlist'; return 'Research';
+  if (a.off) return 'Offer'; if (a.int) return 'Interviews'; if (a.sl) return 'Shortlist'; return 'Longlist';
 }
-// Budget per individual, £k for the financial year (uploaded targets — assumption)
+// Budget per individual, £k for the financial year (uploaded targets: assumption)
 const BUDGET: Record<string, { b: number; inv: number; paid: number; fc: number }> = {
   'Priya Nair': { b: 520, inv: 380, paid: 330, fc: 505 }, 'James Whitlock': { b: 430, inv: 290, paid: 250, fc: 410 },
   'Marcus Bell': { b: 250, inv: 150, paid: 110, fc: 230 }, 'Sofia Marchetti': { b: 480, inv: 350, paid: 300, fc: 470 },
@@ -132,18 +132,11 @@ export class DataService {
     const rows = this.f.rowTotals(), cols = this.f.colTotals();
     return {
       kpis, trend: s(o.trend), pipeline: s(o.pipeline), conversion: o.conversion, recent: o.recent,
-      byCompanyType: { kind: 'bar', title: 'BD meetings by company type', unit: 'meetings',
+      byCompanyType: { kind: 'bar', multi: true, title: 'BD meetings by company type', unit: 'meetings',
         points: COMPANY_TYPES.map((label, i) => ({ label, value: r(rows[i]) })) } as Chart,
-      byRole: { kind: 'bar', title: 'BD meetings by role classification', unit: 'meetings',
+      byRole: { kind: 'bar', multi: true, title: 'BD meetings by role classification', unit: 'meetings',
         points: ROLE_CLASSES.map((label, j) => ({ label, value: r(cols[j]) })) } as Chart,
       matrix: this.f.matrix(),
-      quality: [
-        { label: 'Meetings with an uncoded company type', value: r(rows[5]), hint: 'Relationship Type is blank on the counterparty company' },
-        { label: 'Meetings with an uncoded role', value: r(cols[4]), hint: 'No career on the person’s Current Status' },
-        { label: 'Roles inferred from job title', value: r(this.f.total() * 0.05), hint: 'Shown as inferred until coded in Ezekia' },
-        { label: 'Sectors inferred by AI', value: r(4 * k), hint: 'Company has no Primary Sector coded' },
-        { label: 'Subsector doesn’t match sector', value: k > 0.05 ? 2 : 0, hint: 'Subsector prefix differs from Primary Sector' },
-      ],
       delivery: [
         { label: 'Live assignments', value: String(ASSIGNMENTS.length) },
         { label: 'Invoiced vs budget', value: pct(this.sumBudget(PEOPLE).inv / this.sumBudget(PEOPLE).b) },
@@ -158,7 +151,7 @@ export class DataService {
     // Meeting activity
     originator: {
       title: 'Meetings by originator',
-      subtitle: 'Attributed to the person tagged “Originator” on the linked opportunity.',
+      subtitle: 'Attributed to the user named in each meeting’s BD tag, for example “BD - Mark Sherman”.',
       kpis: [
         { label: 'Meetings', value: '142' }, { label: 'Meeting → lead', value: '26%' },
         { label: 'Top originator', value: 'Priya Nair' },
@@ -191,25 +184,23 @@ export class DataService {
     },
     // Follow-up & outcomes
     'follow-up': {
-      notice: { kind: 'pending', text: 'Follow-up type isn’t captured in Ezekia yet (no tag or text field). The breakdown below is illustrative until a data source is agreed.' },
       title: 'Follow-up activity',
-      subtitle: 'What happened after each BD meeting, based on the linked opportunity.',
+      subtitle: 'What happened after each BD meeting, from its attached opportunity and its follow-up tag (for example “Follow-up - Intro”).',
       kpis: [
         { label: 'Meetings w/ follow-up', value: '101' }, { label: 'Follow-up rate', value: '71%' },
-        { label: 'Meeting → lead', value: '26%' },
+        { label: 'No opportunity linked', value: '14' }, { label: 'Meeting → lead', value: '26%' },
       ],
-      chart: { kind: 'bar', title: 'Follow-up by type', unit: 'meetings', points: [
-        { label: 'Further contact', value: 44 }, { label: 'Introduction', value: 21 },
-        { label: 'Idea', value: 15 }, { label: 'Lead', value: 12 }, { label: 'Opportunity', value: 9 },
+      chart: { kind: 'bar', multi: true, title: 'Follow-up by type', unit: 'meetings', points: [
+        { label: 'Intro', value: 31 }, { label: 'Idea', value: 22 }, { label: 'Lead', value: 17 }, { label: 'Opportunity', value: 12 },
       ]},
-      table: { title: 'Recent follow-ups', columns: ['Meeting', 'Company', 'Follow-up', 'Days'], rows: [
-        ['5 Sep', 'Aldgate Capital', 'Lead', '2'], ['4 Sep', 'Northwind Partners', 'Introduction', '5'],
-        ['3 Sep', 'Meridian Growth', 'Further contact', '3'], ['1 Sep', 'Brightline Ventures', 'Idea', '6'],
+      table: { title: 'Recent follow-ups', columns: ['Meeting', 'Company', 'Follow-up type', 'Days'], rows: [
+        ['5 Sep', 'Aldgate Capital', 'Lead', '2'], ['4 Sep', 'Northwind Partners', 'Intro', '5'],
+        ['3 Sep', 'Meridian Growth', 'Opportunity', '3'], ['1 Sep', 'Brightline Ventures', 'Idea', '6'],
       ]},
     },
     'no-activity': {
       title: 'Meetings with no follow-up',
-      subtitle: 'BD meetings whose linked opportunity shows no subsequent activity.',
+      subtitle: 'BD meetings whose attached opportunity shows no activity after the meeting.',
       kpis: [
         { label: 'No follow-up', value: '41' }, { label: 'Share of meetings', value: '29%' },
         { label: 'Oldest untouched', value: '38 days' },
@@ -296,8 +287,8 @@ export class DataService {
         { label: 'Over 60 days', value: '18' },
       ],
       chart: { kind: 'bar', title: 'Opportunities by time in current status', unit: 'opps', points: [
-        { label: '0–15 days', value: 28 }, { label: '16–30 days', value: 24 },
-        { label: '31–60 days', value: 21 }, { label: '61–90 days', value: 11 }, { label: '90+ days', value: 7 },
+        { label: '0 to 15 days', value: 28 }, { label: '16 to 30 days', value: 24 },
+        { label: '31 to 60 days', value: 21 }, { label: '61 to 90 days', value: 11 }, { label: '90+ days', value: 7 },
       ]},
       table: { title: 'Longest in stage', columns: ['Opportunity', 'Company', 'Status', 'Days'], rows: [
         ['Buy-side intro', 'Vantage Holdings', 'Dormant', '96'], ['Partnership', 'Cedar & Vale', 'Stale', '84'],
@@ -383,14 +374,14 @@ export class DataService {
       subtitle: 'Counterparty company’s Relationship Type custom field, as currently coded in Ezekia.',
       kpis: [
         { label: 'Meetings', value: String(total) }, { label: 'Meeting → lead', value: '26%' },
-        { label: 'Best converting', value: best }, { label: 'Uncoded', value: total ? pct(rows[5] / total) : '—' },
+        { label: 'Best converting', value: best }, { label: 'Uncoded', value: total ? pct(rows[5] / total) : '-' },
       ],
-      chart: { kind: 'bar', title: 'Meetings by company type', unit: 'meetings',
+      chart: { kind: 'bar', multi: true, title: 'Meetings by company type', unit: 'meetings',
         points: COMPANY_TYPES.map((label, i) => ({ label, value: r(rows[i]) })) },
       table: { title: 'Company type detail', columns: ['Company type', 'Meetings', 'Share', 'Qualified leads', 'Conv.'],
         rows: COMPANY_TYPES.map((t, i) => {
           const m = r(rows[i]); const l = r(rows[i] * COMPANY_TYPE_CONV[i]);
-          return [t, String(m), total ? pct(rows[i] / total) : '—', String(l), conv(m, l)];
+          return [t, String(m), total ? pct(rows[i] / total) : '-', String(l), conv(m, l)];
         }) },
     };
   }
@@ -399,13 +390,12 @@ export class DataService {
     const cols = this.f.colTotals(); const total = this.f.total(); const mgmt = cols[0];
     return {
       title: 'Meetings by role classification',
-      subtitle: 'Person’s role class and seniority, from the career on their Current Status (most senior wins).',
-      notice: { kind: 'assumption', text: 'Seniority bands (C-suite, Director / MD, Head of / Senior manager) are proposed and pending confirmation, along with the career → role class mapping.' },
+      subtitle: 'Role class and seniority of the most senior external attendee, from the career on their Current Status.',
       kpis: [
-        { label: 'Meetings', value: String(total) }, { label: 'With management', value: total ? pct(mgmt / total) : '—' },
-        { label: 'Best converting', value: 'Management' }, { label: 'Uncoded', value: total ? pct(cols[4] / total) : '—' },
+        { label: 'Meetings', value: String(total) }, { label: 'With management', value: total ? pct(mgmt / total) : '-' },
+        { label: 'Best converting', value: 'Management' }, { label: 'Uncoded', value: total ? pct(cols[4] / total) : '-' },
       ],
-      chart: { kind: 'bar', title: 'Meetings by role classification', unit: 'meetings',
+      chart: { kind: 'bar', multi: true, title: 'Meetings by role classification', unit: 'meetings',
         points: ROLE_CLASSES.map((label, j) => ({ label, value: r(cols[j]) })) },
       table: { title: 'Management by seniority', columns: ['Seniority', 'Meetings', 'Share of mgmt', 'Qualified leads', 'Conv.'],
         rows: this.f.seniority() === ALL
@@ -427,7 +417,7 @@ export class DataService {
           { label: 'Sectors active', value: String(pts.filter((p) => p.value > 0).length) }, { label: 'Meeting → lead', value: '26%' },
           { label: 'Best converting', value: 'Healthcare' },
         ],
-        chart: { kind: 'bar', title: 'Meetings by primary sector', unit: 'meetings', points: pts },
+        chart: { kind: 'bar', multi: true, title: 'Meetings by primary sector', unit: 'meetings', points: pts },
         table: { title: 'Sector detail', columns: ['Sector', 'Meetings', 'Qualified leads', 'Conv.'],
           rows: pts.map((p) => { const l = r(p.value * SECTOR_CONV[p.label]); return [p.label, String(p.value), String(l), conv(p.value, l)]; }) },
       };
@@ -436,13 +426,13 @@ export class DataService {
     const subs = SECTORS[sel].map((s, i) => ({ label: s, value: r(secTotal * SUBSECTOR_SHARE[i]) }))
       .filter((p) => this.f.subsector() === ALL || p.label === this.f.subsector());
     return {
-      title: `Meetings by subsector — ${sel}`,
+      title: `Meetings by subsector: ${sel}`,
       subtitle: 'Counterparty company’s Subsector custom field within the selected Primary Sector.',
       kpis: [
         { label: 'Meetings', value: String(this.f.total()) }, { label: 'Meeting → lead', value: pct(SECTOR_CONV[sel]) },
         { label: 'Subsectors active', value: String(subs.filter((p) => p.value > 0).length) },
       ],
-      chart: { kind: 'bar', title: `Meetings by subsector — ${sel}`, unit: 'meetings', points: subs },
+      chart: { kind: 'bar', multi: true, title: `Meetings by subsector: ${sel}`, unit: 'meetings', points: subs },
       table: { title: 'Subsector detail', columns: ['Subsector', 'Meetings', 'Qualified leads', 'Conv.'],
         rows: subs.map((p) => { const l = r(p.value * SECTOR_CONV[sel]); return [p.label, String(p.value), String(l), conv(p.value, l)]; }) },
     };
@@ -466,7 +456,7 @@ export class DataService {
   private teamView(name: string): ViewDef {
     const t = this.teams[name] ?? this.teams['All teams'];
     return {
-      title: `Team view — ${name}`,
+      title: `Team view: ${name}`,
       subtitle: 'Meetings, conversion, leads and follow-up across the selected team.',
       kpis: [
         { label: 'Team meetings', value: '' + t.m }, { label: 'Meeting → lead', value: conv(t.m, t.l) },
@@ -492,14 +482,14 @@ export class DataService {
       return [d, CO_NAMES[k], ROLES[(seed + i) % ROLES.length], OUTCOMES[(seed + i) % OUTCOMES.length]];
     });
     return {
-      title: `Individual view — ${name}`,
+      title: `Individual view: ${name}`,
       subtitle: 'Activity, conversion and outcomes for the selected team member.',
       kpis: [
         { label: 'Meetings', value: '' + s.m }, { label: 'Meeting → lead', value: conv(s.m, s.l) },
         { label: 'Qualified leads', value: '' + s.l }, { label: 'Follow-up rate', value: s.f + '%' },
       ],
-      chart: trend('line', `${name} — meetings over time`, 'meetings', this.indivTrend[name] ?? this.indivTrend['Priya Nair']),
-      table: { title: `${name} — recent meetings`, columns: ['Date', 'Company', 'Role', 'Outcome'], rows },
+      chart: trend('line', `${name}: meetings over time`, 'meetings', this.indivTrend[name] ?? this.indivTrend['Priya Nair']),
+      table: { title: `${name}: recent meetings`, columns: ['Date', 'Company', 'Role', 'Outcome'], rows },
     };
   }
 
@@ -510,7 +500,7 @@ export class DataService {
       const rows = SECTOR_NAMES.map((s) => { const m = r(base * SECTOR_SHARE[s]); const l = r(m * SECTOR_CONV[s]);
         return [s, String(m), String(l), conv(m, l), String(r(m * 0.38))]; });
       return {
-        title: 'Sector view — all sectors',
+        title: 'Sector view: all sectors',
         subtitle: 'Choose a Primary sector (and optionally a Subsector) in the filters above to focus this view.',
         kpis: [
           { label: 'Meetings', value: String(r(base)) }, { label: 'Meeting → lead', value: '26%' },
@@ -528,13 +518,13 @@ export class DataService {
     const shape = [0.13, 0.16, 0.15, 0.18, 0.21, 0.17];
     const label = this.f.subsector() === ALL ? sel : `${sel} › ${this.f.subsector()}`;
     return {
-      title: `Sector view — ${label}`,
+      title: `Sector view: ${label}`,
       subtitle: 'Activity, conversion and outcomes for the sector selected in the filters above.',
       kpis: [
         { label: 'Meetings', value: String(m) }, { label: 'Meeting → lead', value: conv(m, l) },
         { label: 'Qualified leads', value: String(l) }, { label: 'Active opps', value: String(r(m * 0.38)) },
       ],
-      chart: trend('line', `${label} — meetings over time`, 'meetings', shape.map((s) => r(m * s * 1.1))),
+      chart: trend('line', `${label}: meetings over time`, 'meetings', shape.map((s) => r(m * s * 1.1))),
       table: { title: 'Subsector detail', columns: ['Subsector', 'Meetings', 'Leads', 'Conv.'],
         rows: subs.map(([s, v]) => { const mm = r(v); const ll = r(mm * SECTOR_CONV[sel]); return [s, String(mm), String(ll), conv(mm, ll)]; }) },
     };
@@ -552,13 +542,13 @@ export class DataService {
     const people = [['A. Hartley', 'Management'], ['R. Okafor', 'Non-management'], ['J. Lindqvist', 'Board / NED'], ['M. Duarte', 'Management']];
     const links = LINKS.filter((x) => x.fund === c.name || x.port === c.name);
     return {
-      title: `Company view — ${c.name}`,
+      title: `Company view: ${c.name}`,
       subtitle: `${c.type} · ${c.sector} › ${c.subsector}`,
       kpis: [
         { label: 'BD meetings', value: String(m) }, { label: 'People met', value: String(2 + seed % 3) },
         { label: 'Last contact', value: DATES[seed % DATES.length] }, { label: 'Live work', value: String(links.length) },
       ],
-      chart: trend('line', `${c.name} — meetings over time`, 'meetings', [0, 1, 1, 2, 1, 2].map((v) => v + (seed % 2))),
+      chart: trend('line', `${c.name}: meetings over time`, 'meetings', [0, 1, 1, 2, 1, 2].map((v) => v + (seed % 2))),
       table: { title: 'Recent BD meetings', columns: ['Date', 'Contact', 'Role class', 'Originator', 'Outcome'],
         rows: DATES.slice(0, 3).map((d, i) => [d, people[(seed + i) % 4][0], people[(seed + i) % 4][1],
           PEOPLE[(seed + i) % PEOPLE.length], OUTCOMES[(seed + i) % OUTCOMES.length]]) },
@@ -569,27 +559,24 @@ export class DataService {
   private fundsFor(level: string): Fund[] {
     const ppl = peopleForLevel(level); return FUNDS.filter((f) => ppl.includes(f.owner));
   }
-  private readonly fundNotice: Notice = { kind: 'assumption',
-    text: 'Assumes target funds are assigned through company ownership in Ezekia, and that a BD meeting with anyone currently at the fund counts as contact. Both pending confirmation.' };
   private fundCoverage(level: string): ViewDef {
     const funds = this.fundsFor(level);
     const by = (s: string) => funds.filter((f) => contactStatus(f.days) === s).length;
     const met = funds.filter((f) => f.days !== null).length;
     const sorted = [...funds].sort((a, b) => (a.days ?? 9999) - (b.days ?? 9999));
     return {
-      notice: this.fundNotice,
-      title: `Target fund coverage — ${level}`,
+      title: `Target fund coverage: ${level}`,
       subtitle: 'Funds on the Ezekia “Target funds” list and when Praeva last had a BD meeting with them.',
       kpis: [
         { label: 'Target funds', value: String(funds.length) }, { label: 'Met in last 60 days', value: String(by('Recent')) },
-        { label: 'Not yet met', value: String(by('Not yet met')) }, { label: 'Coverage', value: funds.length ? pct(met / funds.length) : '—' },
+        { label: 'Not yet met', value: String(by('Not yet met')) }, { label: 'Coverage', value: funds.length ? pct(met / funds.length) : '-' },
       ],
       chart: { kind: 'donut', title: 'Funds by last contact', points: [
-        { label: 'Within 60 days', value: by('Recent') }, { label: '61–90 days', value: by('Lapsing') },
-        { label: '90+ days', value: by('Lapsed') }, { label: 'Not yet met', value: by('Not yet met') },
+        { label: 'Recent (within 60 days)', value: by('Recent') }, { label: 'Lapsing (61 to 90 days)', value: by('Lapsing') },
+        { label: 'Lapsed (more than 90 days)', value: by('Lapsed') }, { label: 'Not yet met', value: by('Not yet met') },
       ]},
       table: { title: 'Last contact by fund', columns: ['Fund', 'Owner', 'Last contact', 'Days since', 'Last met by', 'Contact status'],
-        rows: sorted.map((f) => [f.name, f.owner, f.last ?? '—', f.days === null ? '—' : String(f.days), f.by, contactStatus(f.days)]) },
+        rows: sorted.map((f) => [f.name, f.owner, f.last ?? '-', f.days === null ? '-' : String(f.days), f.by, contactStatus(f.days)]) },
     };
   }
   private fundNotMet(level: string): ViewDef {
@@ -597,8 +584,7 @@ export class DataService {
     const gap = funds.filter((f) => f.days === null || f.days > 90);
     const owners = [...new Set(gap.map((f) => f.owner))];
     return {
-      notice: this.fundNotice,
-      title: `Funds needing contact — ${level}`,
+      title: `Funds needing contact: ${level}`,
       subtitle: 'Target funds never met, or not met for more than 90 days.',
       kpis: [
         { label: 'Not yet met', value: String(gap.filter((f) => f.days === null).length) },
@@ -608,7 +594,7 @@ export class DataService {
       chart: { kind: 'bar', title: 'Funds needing contact by owner', unit: 'funds',
         points: owners.map((o) => ({ label: o, value: gap.filter((f) => f.owner === o).length })).sort((a, b) => b.value - a.value) },
       table: { title: 'Contact list', columns: ['Fund', 'Owner', 'Team', 'Last contact', 'Contact status'],
-        rows: gap.map((f) => [f.name, f.owner, HOME_TEAM[f.owner], f.last ?? '—', contactStatus(f.days)]) },
+        rows: gap.map((f) => [f.name, f.owner, HOME_TEAM[f.owner], f.last ?? '-', contactStatus(f.days)]) },
     };
   }
   private fundOwners(level: string): ViewDef {
@@ -617,12 +603,11 @@ export class DataService {
       return { n: fs.length, recent: fs.filter((f) => contactStatus(f.days) === 'Recent').length, never: fs.filter((f) => f.days === null).length,
         cov: fs.length ? fs.filter((f) => f.days !== null).length / fs.length : 0 }; };
     return {
-      notice: this.fundNotice,
-      title: `Target fund coverage by owner — ${level}`,
+      title: `Target fund coverage by owner: ${level}`,
       subtitle: 'How well each fund owner is covering their assigned target funds.',
       kpis: [
         { label: 'Owners', value: String(ppl.length) }, { label: 'Target funds', value: String(ppl.reduce((a, p) => a + stat(p).n, 0)) },
-        { label: 'Avg coverage', value: ppl.length ? pct(ppl.reduce((a, p) => a + stat(p).cov, 0) / ppl.length) : '—' },
+        { label: 'Avg coverage', value: ppl.length ? pct(ppl.reduce((a, p) => a + stat(p).cov, 0) / ppl.length) : '-' },
       ],
       chart: { kind: 'bar', title: 'Coverage by owner', unit: '%', points: ppl.map((p) => ({ label: p, value: r(stat(p).cov * 100) })) },
       table: { title: 'Owner scorecard', columns: ['Owner', 'Team', 'Target funds', 'Met in 60 days', 'Not yet met', 'Coverage'],
@@ -644,7 +629,7 @@ export class DataService {
     const funds = [...new Set(links.map((l) => l.fund))];
     return {
       notice: this.csNotice,
-      title: `Live work across the business — ${level}`,
+      title: `Live work across the business: ${level}`,
       subtitle: 'Assignments and opportunities at portfolio companies, grouped by the fund that backs them.',
       kpis: [
         { label: 'Funds with live work', value: String(funds.length) },
@@ -664,13 +649,12 @@ export class DataService {
     const cos = COMPANIES.slice(0, 10).map((c, i) => { const m = 3 + (i * 5) % 9; const l = Math.max(0, Math.round(m * [0.3, 0.25, 0.4, 0.2, 0.33][i % 5]));
       return { c, m, l, team: Object.keys(TEAMS)[i % 3] }; }).filter((x) => teams.includes(x.team));
     return {
-      notice: { kind: 'assumption', text: 'Uses the current BD lead definition. Company-level conversion rolls up portfolio companies to their fund once HelloSky links are live.' },
-      title: `Meeting → lead conversion — ${level}`,
+      title: `Meeting → lead conversion: ${level}`,
       subtitle: 'Average conversion of BD meetings into leads, by team and by company.',
       kpis: [
         { label: 'Meeting → lead', value: Math.round(teams.reduce((a, t) => a + tc[t], 0) / teams.length) + '%' },
         { label: 'Companies met', value: String(cos.length) },
-        { label: 'Best converting', value: [...cos].sort((a, b) => b.l / b.m - a.l / a.m)[0]?.c.name ?? '—' },
+        { label: 'Best converting', value: [...cos].sort((a, b) => b.l / b.m - a.l / a.m)[0]?.c.name ?? '-' },
       ],
       chart: { kind: 'bar', title: 'Meeting → lead by team', unit: '%', points: teams.map((t) => ({ label: t, value: tc[t] })) },
       table: { title: 'Conversion by company', columns: ['Company', 'Company type', 'Meetings', 'Leads', 'Conv.'],
@@ -688,10 +672,10 @@ export class DataService {
     const as = this.assignmentsFor(level);
     const avg = as.length ? as.reduce((a, x) => a + x.completion, 0) / as.length : 0;
     return {
-      title: `Delivery summary — ${level}`,
+      title: `Delivery summary: ${level}`,
       subtitle: 'Live search assignments, how far through they are and when they are due.',
       kpis: [
-        { label: 'Live assignments', value: String(as.length) }, { label: 'Avg completion', value: as.length ? Math.round(avg) + '%' : '—' },
+        { label: 'Live assignments', value: String(as.length) }, { label: 'Avg completion', value: as.length ? Math.round(avg) + '%' : '-' },
         { label: 'Due by end of year', value: String(as.filter((a) => /2026/.test(a.end)).length) }, { label: 'Completed YTD', value: String(Math.round(as.length * 1.6)) },
       ],
       chart: { kind: 'bar', title: 'Completion by assignment', unit: '%', points: as.map((a) => ({ label: `${a.client}`, value: a.completion })) },
@@ -706,8 +690,7 @@ export class DataService {
       : ppl.map((p) => [p, [p]]);
     const tot = this.sumBudget(ppl);
     return {
-      notice: { kind: 'assumption', text: 'Budgets aren’t held in Ezekia, so this assumes annual budgets uploaded per individual. Revenue is credited by fee split, falling back to the assignment owner. Pending confirmation.' },
-      title: `Budget summary — ${level}`,
+      title: `Budget summary: ${level}`,
       subtitle: 'Financial-year budget against invoiced, paid and probability-weighted forecast revenue.',
       kpis: [
         { label: 'Budget (FY)', value: gbp(tot.b) }, { label: 'Invoiced', value: gbp(tot.inv) },
@@ -722,10 +705,9 @@ export class DataService {
   }
   private wipView(level: string): ViewDef {
     const as = this.assignmentsFor(level);
-    const stages = ['Research', 'Longlist', 'Shortlist', 'Interviews', 'Offer'];
+    const stages = ['Longlist', 'Shortlist', 'Interviews', 'Offer'];
     return {
-      notice: { kind: 'assumption', text: 'Milestones shown are proposed search deliverables (longlist, shortlist, interviews, offer). Pending confirmation of which pipeline stages count.' },
-      title: `Work in progress — ${level}`,
+      title: `Work in progress: ${level}`,
       subtitle: 'Where each live search sits against its deliverables, from the candidate pipeline in Ezekia.',
       kpis: [
         { label: 'Live searches', value: String(as.length) },
@@ -733,10 +715,10 @@ export class DataService {
         { label: 'In interviews', value: String(as.filter((a) => a.int > 0 && !a.off).length) },
         { label: 'At offer', value: String(as.filter((a) => a.off > 0).length) },
       ],
-      chart: { kind: 'bar', title: 'Searches by current milestone', unit: 'searches',
+      chart: { kind: 'bar', multi: true, title: 'Searches by current milestone', unit: 'searches',
         points: stages.map((s) => ({ label: s, value: as.filter((a) => milestone(a) === s).length })) },
-      table: { title: 'Search deliverables', columns: ['Assignment', 'Client', 'Longlist', 'Shortlist', 'Interviews', 'Offers', 'Next milestone'],
-        rows: as.map((a) => [a.name, a.client, String(a.ll), String(a.sl), String(a.int), String(a.off), a.next]) },
+      table: { title: 'Search deliverables', columns: ['Assignment', 'Client', 'Longlist', 'Shortlist', 'Interviews', 'Offers', 'Current milestone'],
+        rows: as.map((a) => [a.name, a.client, String(a.ll), String(a.sl), String(a.int), String(a.off), milestone(a)]) },
     };
   }
 }

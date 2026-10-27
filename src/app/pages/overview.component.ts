@@ -6,17 +6,17 @@ import { StatCardComponent } from '../ui/stat-card.component';
 import { ChartComponent } from '../ui/chart.component';
 import { TablePanelComponent } from '../ui/table-panel.component';
 import { MatrixComponent } from '../ui/matrix.component';
-import { QualityPanelComponent } from '../ui/quality-panel.component';
+import { PALETTE } from '../ui/palette';
 
 @Component({
   selector: 'app-overview',
   standalone: true,
-  imports: [StatCardComponent, ChartComponent, TablePanelComponent, MatrixComponent, QualityPanelComponent, RouterLink],
+  imports: [StatCardComponent, ChartComponent, TablePanelComponent, MatrixComponent, RouterLink],
   template: `
     @if (o(); as v) {
       <div class="stat-row">
-        @for (k of v.kpis; track k.label; let first = $first) {
-          <app-stat-card [primary]="first" [label]="k.label" [value]="k.value" [delta]="k.delta" [trend]="k.trend" />
+        @for (k of v.kpis; track k.label; let first = $first; let i = $index) {
+          <app-stat-card [primary]="first" [tone]="palette[i - 1]" [label]="k.label" [value]="k.value" [delta]="k.delta" [trend]="k.trend" />
         }
       </div>
 
@@ -25,10 +25,7 @@ import { QualityPanelComponent } from '../ui/quality-panel.component';
         <app-chart [chart]="v.byRole" />
       </div>
 
-      <div class="grid-wide">
-        <app-matrix title="Company type × role classification" [rows]="companyTypes" [cols]="roles" [values]="v.matrix" />
-        <app-quality-panel [items]="v.quality" />
-      </div>
+      <app-matrix title="Company type × role classification" [rows]="companyTypes" [cols]="roles" [values]="v.matrix" />
 
       <div class="grid-2">
         <app-chart [chart]="v.trend" />
@@ -46,8 +43,8 @@ import { QualityPanelComponent } from '../ui/quality-panel.component';
           <a routerLink="/delivery">Open delivery &amp; budget</a>
         </header>
         <div class="stat-row">
-          @for (k of v.delivery; track k.label) {
-            <app-stat-card [label]="k.label" [value]="k.value" />
+          @for (k of v.delivery; track k.label; let i = $index) {
+            <app-stat-card [label]="k.label" [value]="k.value" [tone]="palette[(i + 4) % palette.length]" />
           }
         </div>
       </section>
@@ -69,6 +66,7 @@ import { QualityPanelComponent } from '../ui/quality-panel.component';
 export class OverviewComponent {
   private d = inject(DataService);
   o = computed(() => this.d.overview());
+  palette = PALETTE;
   companyTypes = COMPANY_TYPES;
   roles = ROLE_CLASSES;
 }

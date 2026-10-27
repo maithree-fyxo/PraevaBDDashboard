@@ -33,12 +33,15 @@ import { Component, Input } from '@angular/core';
     .num { text-align: right; font-variant-numeric: tabular-nums; }
     .tag { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: var(--r-pill);
       font-size: 11.5px; font-weight: 600; background: var(--surface-2); color: var(--text-muted); }
-    .tag[data-s="qualified-lead"], .tag[data-s="active"] { background: var(--accent-soft); color: var(--accent-strong); }
-    .tag[data-s="dormant"] { background: color-mix(in srgb, var(--neg) 14%, transparent); color: var(--neg); }
-    .tag[data-s="recent"], .tag[data-s="offer"], .tag[data-s="final-interviews"] { background: var(--accent-soft); color: var(--accent-strong); }
-    .tag[data-s="lapsing"] { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
-    .tag[data-s="lapsed"] { background: color-mix(in srgb, var(--neg) 14%, transparent); color: var(--neg); }
-    .tag[data-s="stale"], .tag[data-s="no-follow-up"], .tag[data-s="not-yet-met"] { background: color-mix(in srgb, var(--text-faint) 18%, transparent); color: var(--text-muted); }
+    .tag { --t: var(--c-indigo); background: color-mix(in srgb, var(--t) 14%, transparent); color: color-mix(in srgb, var(--t) 78%, var(--text)); }
+    .tag[data-s="qualified-lead"] { --t: var(--c-pink); }
+    .tag[data-s="active"], .tag[data-s="recent"], .tag[data-s="further-contact"] { --t: var(--c-green); }
+    .tag[data-s="dormant"], .tag[data-s="lapsing"] { --t: var(--c-amber); }
+    .tag[data-s="lapsed"] { --t: var(--c-coral); }
+    .tag[data-s="shortlist"], .tag[data-s="longlist"] { --t: var(--c-sky); }
+    .tag[data-s="first-interviews"], .tag[data-s="final-interviews"] { --t: var(--c-violet); }
+    .tag[data-s="offer"] { --t: var(--c-teal); }
+    .tag[data-s="stale"], .tag[data-s="no-follow-up"], .tag[data-s="not-yet-met"] { --t: var(--c-grey); color: var(--text-muted); }
   `],
 })
 export class DataTableComponent {

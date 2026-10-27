@@ -15,23 +15,39 @@
             "outputPath": "dist/bd-dashboard",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [
+              "zone.js"
+            ],
             "tsConfig": "tsconfig.app.json",
-            "assets": [],
-            "styles": ["src/styles.css"],
+            "assets": [
+              "src/assets"
+            ],
+            "styles": [
+              "src/styles.css"
+            ],
             "scripts": []
           },
           "configurations": {
-            "production": { "optimization": true, "outputHashing": "all" },
-            "development": { "optimization": false, "sourceMap": true }
+            "production": {
+              "optimization": true,
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "sourceMap": true
+            }
           },
           "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
-            "production": { "buildTarget": "bd-dashboard:build:production" },
-            "development": { "buildTarget": "bd-dashboard:build:development" }
+            "production": {
+              "buildTarget": "bd-dashboard:build:production"
+            },
+            "development": {
+              "buildTarget": "bd-dashboard:build:development"
+            }
           },
           "defaultConfiguration": "development"
         }

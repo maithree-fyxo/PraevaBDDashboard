@@ -1,6 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Point } from '../core/data.service';
+import { seriesColor } from './palette';
 
 @Component({
   selector: 'app-donut-chart',
@@ -47,14 +48,13 @@ import { Point } from '../core/data.service';
 export class DonutChartComponent {
   @Input() set points(v: Point[]) { this._p = v; }
   private _p: Point[] = [];
-  private palette = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)'];
 
   get total() { return this._p.reduce((a, b) => a + b.value, 0); }
   get segments() {
     const total = this.total || 1; let acc = 0;
     return this._p.map((p, i) => {
       const len = (p.value / total) * 100;
-      const seg = { label: p.label, value: p.value, len, color: this.palette[i % this.palette.length], offset: (100 - acc + 25) % 100 };
+      const seg = { label: p.label, value: p.value, len, color: seriesColor(p.label, i), offset: (100 - acc + 25) % 100 };
       acc += len; return seg;
     });
   }

@@ -4,6 +4,7 @@ import { StatCardComponent } from './stat-card.component';
 import { ChartComponent } from './chart.component';
 import { TablePanelComponent } from './table-panel.component';
 import { NoticeComponent } from './notice.component';
+import { PALETTE } from './palette';
 
 @Component({
   selector: 'app-view-body',
@@ -13,8 +14,8 @@ import { NoticeComponent } from './notice.component';
     @if (def) {
       <app-notice [notice]="def.notice" />
       <div class="stat-row">
-        @for (k of def.kpis; track k.label) {
-          <app-stat-card [label]="k.label" [value]="k.value" [delta]="k.delta" [trend]="k.trend"
+        @for (k of def.kpis; track k.label; let i = $index) {
+          <app-stat-card [label]="k.label" [value]="k.value" [delta]="k.delta" [trend]="k.trend" [tone]="palette[i % palette.length]"
             [primary]="highlightConversion && k.label.startsWith('Meeting → lead')" />
         }
       </div>
@@ -32,6 +33,7 @@ import { NoticeComponent } from './notice.component';
   `],
 })
 export class ViewBodyComponent {
+  palette = PALETTE;
   @Input() def?: ViewDef;
   @Input() highlightConversion = true;
 }

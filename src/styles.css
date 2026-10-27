@@ -14,11 +14,6 @@
   --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
   --sp-5: 20px; --sp-6: 24px; --sp-7: 32px; --sp-8: 40px;
 
-  /* Pink chart scale (shared across themes) */
-  --series-1: #e24a86;
-  --series-2: #f39ac0;
-  --series-3: #ab2f68;
-  --series-4: #f7c6da;
 }
 
 /* ---- Light (default) ---- */
@@ -41,6 +36,16 @@
   --warn: #b7791f;
   --shadow: 0 1px 2px rgba(20, 20, 35, 0.05), 0 2px 8px rgba(20, 20, 35, 0.04);
   --track: #ececf0;
+  /* Chart and module palette */
+  --c-pink: #e24a86;
+  --c-indigo: #5b6cf0;
+  --c-teal: #12a1a0;
+  --c-amber: #e39b2d;
+  --c-violet: #9459e0;
+  --c-sky: #3196dd;
+  --c-green: #2fa267;
+  --c-coral: #ec7655;
+  --c-grey: #b9b9c3;
 }
 
 /* ---- Dark ---- */
@@ -63,6 +68,15 @@
   --warn: #e0a24a;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 4px 14px rgba(0, 0, 0, 0.30);
   --track: #2a2a31;
+  --c-pink: #ec5c93;
+  --c-indigo: #7f8cff;
+  --c-teal: #2cc2be;
+  --c-amber: #f0b052;
+  --c-violet: #ad80f2;
+  --c-sky: #58aef0;
+  --c-green: #48c187;
+  --c-coral: #f48f73;
+  --c-grey: #55555f;
 }
 
 * { box-sizing: border-box; }

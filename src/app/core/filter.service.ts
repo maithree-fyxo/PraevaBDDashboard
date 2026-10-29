@@ -1,4 +1,5 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { RoleService } from './role.service';
 import {
   ALL, BASE_MEETINGS, COMPANY_TYPES, MATRIX, PERIOD_FACTOR, ROLE_CLASSES, SECTORS,
   SECTOR_SHARE, SENIORITY, SENIORITY_SHARE, SUBSECTOR_SHARE,
@@ -7,6 +8,7 @@ import {
 /** Global dimension filters: period, company type, role classification, seniority, sector, subsector. */
 @Injectable({ providedIn: 'root' })
 export class FilterService {
+  private roles = inject(RoleService);
   readonly period = signal('Last 90 days');
   readonly companyType = signal(ALL);
   readonly role = signal(ALL);
@@ -46,7 +48,7 @@ export class FilterService {
     const ci = COMPANY_TYPES.indexOf(this.companyType());
     const ri = ROLE_CLASSES.indexOf(this.role());
     const si = SENIORITY.indexOf(this.seniority());
-    const f = this.periodFactor() * this.sectorFactor();
+    const f = this.periodFactor() * this.sectorFactor() * this.roles.scopeFactor();
     return MATRIX.map((row, i) => row.map((v, j) => {
       if (ci >= 0 && ci !== i) return 0;
       if (ri >= 0 && ri !== j) return 0;

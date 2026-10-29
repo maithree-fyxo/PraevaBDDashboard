@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { FilterService } from './filter.service';
+import { RoleService } from './role.service';
 import { scaleDef } from './scale';
 import {
   ALL, COMPANIES, COMPANY_TYPES, COMPANY_TYPE_CONV, HOME_TEAM, LEVELS, PEOPLE, ROLE_CLASSES, ROLE_CONV,
@@ -10,7 +11,7 @@ export interface Kpi { label: string; value: string; delta?: string; trend?: 'up
 export interface Point { label: string; value: number; }
 export interface Chart { kind: 'bar' | 'line' | 'donut'; title: string; unit?: string; points: Point[]; /** one colour per bar */ multi?: boolean; }
 export interface Table { title: string; columns: string[]; rows: string[][]; }
-export interface Notice { kind: 'assumption' | 'pending'; text: string; }
+export interface Notice { kind: 'assumption' | 'pending' | 'info'; text: string; }
 export interface ViewDef { title: string; subtitle: string; kpis: Kpi[]; chart: Chart; table: Table; notice?: Notice; }
 export interface FilterDef { label: string; options: string[]; }
 
@@ -68,29 +69,54 @@ const LINKS: Link[] = [
 ];
 
 // ---------- Delivery (Ezekia assignments, completion, candidate pipeline) ----------
-interface Assignment { name: string; client: string; owner: string; completion: number; end: string; ll: number; sl: number; int: number; off: number; next: string; }
+interface Assignment { name: string; client: string; owner: string; start: string; completion: number; end: string; ll: number; sl: number; int: number; off: number;
+  dts: number | null; next: string; }
 const ASSIGNMENTS: Assignment[] = [
-  { name: 'CEO search', client: 'Granton Logistics', owner: 'Daniel Osei', completion: 88, end: 'Oct 2026', ll: 46, sl: 7, int: 3, off: 1, next: 'Placement' },
-  { name: 'CTO search', client: 'Orion Labs', owner: 'Lena Fischer', completion: 74, end: 'Nov 2026', ll: 38, sl: 6, int: 2, off: 0, next: 'Offer' },
-  { name: 'CFO search', client: 'Kestrel Foods', owner: 'Sofia Marchetti', completion: 55, end: 'Dec 2026', ll: 42, sl: 6, int: 0, off: 0, next: 'First interviews' },
-  { name: 'COO search', client: 'Brightwater Clinics', owner: 'Lena Fischer', completion: 61, end: 'Dec 2026', ll: 35, sl: 5, int: 4, off: 0, next: 'Final interviews' },
-  { name: 'Chair search', client: 'Aurora Energy', owner: 'James Whitlock', completion: 22, end: 'Feb 2027', ll: 31, sl: 0, int: 0, off: 0, next: 'Shortlist' },
-  { name: 'CFO search', client: 'Halcyon Group', owner: 'Priya Nair', completion: 40, end: 'Jan 2027', ll: 44, sl: 5, int: 0, off: 0, next: 'First interviews' },
-  { name: 'NED search', client: 'Cedar & Vale', owner: 'Marcus Bell', completion: 15, end: 'Mar 2027', ll: 24, sl: 0, int: 0, off: 0, next: 'Shortlist' },
+  { name: 'CEO search', client: 'Granton Logistics', owner: 'Daniel Osei', start: '2 Jun 2026', completion: 88, end: '6 Nov 2026', ll: 46, sl: 7, int: 3, off: 1, dts: 31, next: 'Placement' },
+  { name: 'CTO search', client: 'Orion Labs', owner: 'Lena Fischer', start: '14 Jul 2026', completion: 74, end: '28 Nov 2026', ll: 38, sl: 6, int: 2, off: 0, dts: 36, next: 'Offer' },
+  { name: 'CFO search', client: 'Kestrel Foods', owner: 'Sofia Marchetti', start: '1 Aug 2026', completion: 55, end: '12 Dec 2026', ll: 42, sl: 6, int: 0, off: 0, dts: 41, next: 'First interviews' },
+  { name: 'COO search', client: 'Brightwater Clinics', owner: 'Lena Fischer', start: '18 Jul 2026', completion: 61, end: '15 Dec 2026', ll: 35, sl: 5, int: 4, off: 0, dts: 33, next: 'Final interviews' },
+  { name: 'Chair search', client: 'Aurora Energy', owner: 'James Whitlock', start: '22 Sep 2026', completion: 22, end: '20 Feb 2027', ll: 31, sl: 0, int: 0, off: 0, dts: null, next: 'Shortlist' },
+  { name: 'CFO search', client: 'Halcyon Group', owner: 'Priya Nair', start: '5 Sep 2026', completion: 40, end: '29 Jan 2027', ll: 44, sl: 5, int: 0, off: 0, dts: 38, next: 'First interviews' },
+  { name: 'NED search', client: 'Cedar & Vale', owner: 'Marcus Bell', start: '6 Oct 2026', completion: 15, end: '19 Mar 2027', ll: 24, sl: 0, int: 0, off: 0, dts: null, next: 'Shortlist' },
 ];
+// Completed assignments (for shortlist, placement and NPS averages)
+interface Closed { name: string; client: string; owner: string; sl: number; dts: number; placed: boolean; dtp: number | null; nps: number | null; closed: string; }
+const CLOSED: Closed[] = [
+  { name: 'CFO search', client: 'Vantage Holdings', owner: 'Sofia Marchetti', sl: 6, dts: 34, placed: true, dtp: 104, nps: 70, closed: 'Sep 2026' },
+  { name: 'CEO search', client: 'Peak Industries', owner: 'Daniel Osei', sl: 7, dts: 39, placed: true, dtp: 121, nps: 60, closed: 'Aug 2026' },
+  { name: 'Chair search', client: 'Tessellate Software', owner: 'Priya Nair', sl: 5, dts: 30, placed: true, dtp: 96, nps: 80, closed: 'Jul 2026' },
+  { name: 'COO search', client: 'Halcyon Group', owner: 'Lena Fischer', sl: 6, dts: 44, placed: false, dtp: null, nps: 30, closed: 'Jul 2026' },
+  { name: 'CTO search', client: 'Kestrel Foods', owner: 'James Whitlock', sl: 8, dts: 36, placed: true, dtp: 112, nps: 70, closed: 'Jun 2026' },
+  { name: 'NED search', client: 'Aurora Energy', owner: 'Marcus Bell', sl: 4, dts: 28, placed: true, dtp: 88, nps: 90, closed: 'May 2026' },
+];
+// Upcoming kick-offs (assignments with a future start date)
+const KICKOFFS = [
+  { name: 'CFO search', client: 'Meridian Growth', owner: 'Sofia Marchetti', start: '3 Nov 2026' },
+  { name: 'Board search', client: 'Vantage Holdings', owner: 'Priya Nair', start: '12 Nov 2026' },
+  { name: 'CHRO search', client: 'Peak Industries', owner: 'Daniel Osei', start: '24 Nov 2026' },
+];
+// Revenue entries with status "Shortlist" and a date in the next 30 days
+const SHORTLIST_DUE = [
+  { name: 'Chair search', client: 'Aurora Energy', owner: 'James Whitlock', date: '30 Oct 2026' },
+  { name: 'NED search', client: 'Cedar & Vale', owner: 'Marcus Bell', date: '18 Nov 2026' },
+];
+// Budget assumptions for delivery (placeholder values: budget inputs to be confirmed by Praeva)
+const ASSUME = { shortlist: 6, dts: 35, dtp: 110, rate: 85, nps: 65, live: 2 };
 function milestone(a: Assignment): string {
   if (a.off) return 'Offer'; if (a.int) return 'Interviews'; if (a.sl) return 'Shortlist'; return 'Longlist';
 }
 // Budget per individual, £k for the financial year (uploaded targets: assumption)
-const BUDGET: Record<string, { b: number; inv: number; paid: number; fc: number }> = {
-  'Priya Nair': { b: 520, inv: 380, paid: 330, fc: 505 }, 'James Whitlock': { b: 430, inv: 290, paid: 250, fc: 410 },
-  'Marcus Bell': { b: 250, inv: 150, paid: 110, fc: 230 }, 'Sofia Marchetti': { b: 480, inv: 350, paid: 300, fc: 470 },
-  'Daniel Osei': { b: 360, inv: 190, paid: 160, fc: 300 }, 'Lena Fischer': { b: 300, inv: 210, paid: 180, fc: 290 },
+const BUDGET: Record<string, { b: number; inv: number; paid: number; fc: number; wip: number }> = {
+  'Priya Nair': { b: 520, inv: 380, paid: 330, fc: 505, wip: 90 }, 'James Whitlock': { b: 430, inv: 290, paid: 250, fc: 410, wip: 70 },
+  'Marcus Bell': { b: 250, inv: 150, paid: 110, fc: 230, wip: 40 }, 'Sofia Marchetti': { b: 480, inv: 350, paid: 300, fc: 470, wip: 85 },
+  'Daniel Osei': { b: 360, inv: 190, paid: 160, fc: 300, wip: 60 }, 'Lena Fischer': { b: 300, inv: 210, paid: 180, fc: 290, wip: 50 },
 };
 
 @Injectable({ providedIn: 'root' })
 export class DataService {
   private f = inject(FilterService);
+  private roles = inject(RoleService);
 
   // ---------- Overview ----------
   readonly overviewBase = {
@@ -120,7 +146,7 @@ export class DataService {
     ]} as Table,
   };
 
-  overview() {
+  bdSummary() {
     const k = this.f.factor();
     const o = this.overviewBase;
     const s = (c: Chart): Chart => ({ ...c, points: c.points.map((p) => ({ ...p, value: r(p.value * k) })) });
@@ -137,12 +163,35 @@ export class DataService {
       byRole: { kind: 'bar', multi: true, title: 'BD meetings by role classification', unit: 'meetings',
         points: ROLE_CLASSES.map((label, j) => ({ label, value: r(cols[j]) })) } as Chart,
       matrix: this.f.matrix(),
-      delivery: [
-        { label: 'Live assignments', value: String(ASSIGNMENTS.length) },
-        { label: 'Invoiced vs budget', value: pct(this.sumBudget(PEOPLE).inv / this.sumBudget(PEOPLE).b) },
-        { label: 'Forecast vs budget', value: pct(this.sumBudget(PEOPLE).fc / this.sumBudget(PEOPLE).b) },
-        { label: 'Searches at shortlist or later', value: String(ASSIGNMENTS.filter((a) => a.sl > 0).length) },
+    };
+  }
+
+  overviewAll() {
+    const t = this.sumBudget(PEOPLE);
+    const npsList = CLOSED.filter((c) => c.nps !== null);
+    const converted = 4;
+    const deadlines = [
+      ...ASSIGNMENTS.filter((a) => /^(\d+) Nov 2026$/.test(a.end) && parseInt(a.end) <= 25).map((a) => ({ d: a.end, type: 'Target end', a })),
+      ...KICKOFFS.filter((k) => parseInt(k.start) <= 25).map((k) => ({ d: k.start, type: 'Kick-off', a: k })),
+      ...SHORTLIST_DUE.map((x) => ({ d: x.date, type: 'Shortlist due', a: x })),
+    ].sort((x, y) => new Date(x.d).getTime() - new Date(y.d).getTime());
+    return {
+      financial: [
+        { label: 'Invoiced + WIP vs budget', value: pct((t.inv + t.wip) / t.b) },
+        { label: 'Invoiced', value: gbp(t.inv), delta: `WIP ${gbp(t.wip)} · budget ${gbp(t.b)}`, trend: 'flat' },
       ] as Kpi[],
+      bd: [
+        { label: 'Target accounts converted', value: `${converted} of ${FUNDS.length}`, delta: pct(converted / FUNDS.length) + ' of target funds', trend: 'flat' },
+        { label: 'BD meetings', value: '142', delta: '+18% vs prev. period', trend: 'up' },
+      ] as Kpi[],
+      delivery: [
+        { label: 'Average NPS', value: String(r(npsList.reduce((a, c) => a + (c.nps as number), 0) / npsList.length)), delta: 'Source to be confirmed', trend: 'flat' },
+        { label: 'Live searches', value: String(ASSIGNMENTS.length), delta: `${KICKOFFS.length} kick-offs scheduled`, trend: 'flat' },
+      ] as Kpi[],
+      revenueChart: { kind: 'bar', title: 'Invoiced and WIP as % of budget by team', unit: '%',
+        points: Object.keys(TEAMS).map((tm) => { const x = this.sumBudget(PEOPLE.filter((p) => HOME_TEAM[p] === tm)); return { label: tm, value: r(((x.inv + x.wip) / x.b) * 100) }; }) } as Chart,
+      deadlines: { title: 'Key deadlines in the next 30 days', columns: ['Date', 'Deadline', 'Assignment', 'Client', 'Owner'],
+        rows: deadlines.map((x) => [x.d.replace(' 2026', ''), x.type, x.a.name, x.a.client, x.a.owner]) } as Table,
     };
   }
 
@@ -185,10 +234,10 @@ export class DataService {
     // Follow-up & outcomes
     'follow-up': {
       title: 'Follow-up activity',
-      subtitle: 'What happened after each BD meeting, from its attached opportunity and its follow-up tag (for example “Follow-up - Intro”).',
+      subtitle: 'What happened after each BD meeting, from its attached or company-matched opportunity and its follow-up tag (for example “Follow-up - Intro”).',
       kpis: [
         { label: 'Meetings w/ follow-up', value: '101' }, { label: 'Follow-up rate', value: '71%' },
-        { label: 'No opportunity linked', value: '14' }, { label: 'Meeting → lead', value: '26%' },
+        { label: 'Linked by company match', value: '18' }, { label: 'No opportunity linked', value: '9' },
       ],
       chart: { kind: 'bar', multi: true, title: 'Follow-up by type', unit: 'meetings', points: [
         { label: 'Intro', value: 31 }, { label: 'Idea', value: 22 }, { label: 'Lead', value: 17 }, { label: 'Opportunity', value: 12 },
@@ -346,21 +395,32 @@ export class DataService {
       case 'fund-owners': return this.fundOwners(selection);
       case 'cs-live': return this.crossSellLive(selection);
       case 'cs-conversion': return this.crossSellConversion(selection);
-      case 'delivery': return this.deliveryView(selection);
-      case 'budget': return this.budgetView(selection);
+      case 'fin-revenue': return this.revenueView(selection);
+      case 'fin-billing': return this.billingView(selection);
+      case 'dl-live': return this.liveView(selection);
+      case 'dl-shortlist': return this.shortlistView(selection);
+      case 'dl-nps': return this.npsView(selection);
+      case 'dl-capacity': return this.capacityView(selection);
       case 'wip': return this.wipView(selection);
     }
     return scaleDef(this.views[key] ?? this.views['originator'], k);
   }
 
   filterFor(key: string): FilterDef | null {
+    const bd = this.roles.levels('bd');
     switch (key) {
-      case 'team': return { label: 'Team', options: ['All teams', ...Object.keys(TEAMS)] };
-      case 'individual': return { label: 'Individual', options: PEOPLE };
+      case 'team': {
+        const teams = bd.filter((l) => l.startsWith('Team: ')).map((l) => l.slice(6));
+        return { label: 'Team', options: this.roles.role() === 'Member' ? teams : ['All teams', ...teams] };
+      }
+      case 'individual': return { label: 'Individual', options: bd.filter((l) => PEOPLE.includes(l)) };
       case 'company': return { label: 'Company', options: this.companyOptions() };
-      case 'fund-coverage': case 'fund-not-met': case 'fund-owners':
-      case 'cs-live': case 'cs-conversion': case 'delivery': case 'budget': case 'wip':
-        return { label: 'Level', options: LEVELS };
+      case 'fund-coverage': case 'fund-not-met': case 'fund-owners': case 'cs-live': case 'cs-conversion':
+        return { label: 'Level', options: this.roles.levels('funds') };
+      case 'dl-live': case 'dl-shortlist': case 'dl-nps': case 'dl-capacity': case 'wip':
+        return { label: 'Level', options: this.roles.levels('delivery') };
+      case 'fin-revenue': case 'fin-billing':
+        return { label: 'Level', options: this.roles.levels('financial') };
     }
     return null;
   }
@@ -570,6 +630,7 @@ export class DataService {
       kpis: [
         { label: 'Target funds', value: String(funds.length) }, { label: 'Met in last 60 days', value: String(by('Recent')) },
         { label: 'Not yet met', value: String(by('Not yet met')) }, { label: 'Coverage', value: funds.length ? pct(met / funds.length) : '-' },
+        { label: 'Converted in period', value: String(Math.min(4, funds.length)) },
       ],
       chart: { kind: 'donut', title: 'Funds by last contact', points: [
         { label: 'Recent (within 60 days)', value: by('Recent') }, { label: 'Lapsing (61 to 90 days)', value: by('Lapsing') },
@@ -665,42 +726,123 @@ export class DataService {
   // ---------- Delivery & budget ----------
   private assignmentsFor(level: string) { const ppl = peopleForLevel(level); return ASSIGNMENTS.filter((a) => ppl.includes(a.owner)); }
   private sumBudget(ppl: string[]) {
-    return ppl.reduce((acc, p) => { const b = BUDGET[p]; return { b: acc.b + b.b, inv: acc.inv + b.inv, paid: acc.paid + b.paid, fc: acc.fc + b.fc }; },
-      { b: 0, inv: 0, paid: 0, fc: 0 });
+    return ppl.reduce((acc, p) => { const b = BUDGET[p]; return { b: acc.b + b.b, inv: acc.inv + b.inv, paid: acc.paid + b.paid, fc: acc.fc + b.fc, wip: acc.wip + b.wip }; },
+      { b: 0, inv: 0, paid: 0, fc: 0, wip: 0 });
   }
-  private deliveryView(level: string): ViewDef {
-    const as = this.assignmentsFor(level);
-    const avg = as.length ? as.reduce((a, x) => a + x.completion, 0) / as.length : 0;
-    return {
-      title: `Delivery summary: ${level}`,
-      subtitle: 'Live search assignments, how far through they are and when they are due.',
-      kpis: [
-        { label: 'Live assignments', value: String(as.length) }, { label: 'Avg completion', value: as.length ? Math.round(avg) + '%' : '-' },
-        { label: 'Due by end of year', value: String(as.filter((a) => /2026/.test(a.end)).length) }, { label: 'Completed YTD', value: String(Math.round(as.length * 1.6)) },
-      ],
-      chart: { kind: 'bar', title: 'Completion by assignment', unit: '%', points: as.map((a) => ({ label: `${a.client}`, value: a.completion })) },
-      table: { title: 'Live assignments', columns: ['Assignment', 'Client', 'Owner', 'Completion', 'Target end'],
-        rows: as.map((a) => [a.name, a.client, a.owner, a.completion + '%', a.end]) },
-    };
-  }
-  private budgetView(level: string): ViewDef {
+  private closedFor(level: string) { const ppl = peopleForLevel(level); return CLOSED.filter((a) => ppl.includes(a.owner)); }
+  private readonly assumeNotice: Notice = { kind: 'pending',
+    text: 'Budget assumption figures are placeholders until Praeva confirms which budget values are entered in Budget input.' };
+
+  // ---------- Financial ----------
+  private revenueView(level: string): ViewDef {
     const ppl = peopleForLevel(level);
     const groups: [string, string[]][] = level === 'Praeva'
       ? Object.keys(TEAMS).map((t) => [t, PEOPLE.filter((p) => HOME_TEAM[p] === t)])
       : ppl.map((p) => [p, [p]]);
-    const tot = this.sumBudget(ppl);
+    const t = this.sumBudget(ppl);
     return {
-      title: `Budget summary: ${level}`,
-      subtitle: 'Financial-year budget against invoiced, paid and probability-weighted forecast revenue.',
+      title: `Revenue against budget: ${level}`,
+      subtitle: 'Financial-year budget against invoiced revenue and work in progress (unbilled fees on live assignments).',
       kpis: [
-        { label: 'Budget (FY)', value: gbp(tot.b) }, { label: 'Invoiced', value: gbp(tot.inv) },
-        { label: 'Paid', value: gbp(tot.paid) }, { label: 'Forecast (weighted)', value: gbp(tot.fc) },
+        { label: 'Budget (FY)', value: gbp(t.b) }, { label: 'Invoiced', value: gbp(t.inv) },
+        { label: 'Work in progress', value: gbp(t.wip) }, { label: 'Invoiced + WIP vs budget', value: pct((t.inv + t.wip) / t.b) },
       ],
-      chart: { kind: 'bar', title: 'Invoiced as % of budget', unit: '%',
-        points: groups.map(([g, p]) => { const s = this.sumBudget(p); return { label: g, value: r((s.inv / s.b) * 100) }; }) },
-      table: { title: level === 'Praeva' ? 'Budget by team' : 'Budget by individual',
-        columns: [level === 'Praeva' ? 'Team' : 'Individual', 'Budget', 'Invoiced', 'Paid', 'Forecast', 'Forecast vs budget'],
-        rows: groups.map(([g, p]) => { const s = this.sumBudget(p); return [g, gbp(s.b), gbp(s.inv), gbp(s.paid), gbp(s.fc), pct(s.fc / s.b)]; }) },
+      chart: { kind: 'bar', title: 'Invoiced and WIP as % of budget', unit: '%',
+        points: groups.map(([g, p]) => { const x = this.sumBudget(p); return { label: g, value: r(((x.inv + x.wip) / x.b) * 100) }; }) },
+      table: { title: level === 'Praeva' ? 'Revenue by team' : 'Revenue by individual',
+        columns: [level === 'Praeva' ? 'Team' : 'Individual', 'Budget', 'Invoiced', 'WIP', 'Invoiced + WIP', 'vs budget'],
+        rows: groups.map(([g, p]) => { const x = this.sumBudget(p); return [g, gbp(x.b), gbp(x.inv), gbp(x.wip), gbp(x.inv + x.wip), pct((x.inv + x.wip) / x.b)]; }) },
+    };
+  }
+  private billingView(level: string): ViewDef {
+    const ppl = peopleForLevel(level);
+    const t = this.sumBudget(ppl);
+    return {
+      title: `Billing: ${level}`,
+      subtitle: 'Invoiced, paid and outstanding fees, and probability-weighted forecast revenue, from Ezekia billing.',
+      kpis: [
+        { label: 'Invoiced', value: gbp(t.inv) }, { label: 'Paid', value: gbp(t.paid) },
+        { label: 'Outstanding', value: gbp(t.inv - t.paid) }, { label: 'Forecast (weighted)', value: gbp(t.fc) },
+      ],
+      chart: { kind: 'bar', title: 'Forecast as % of budget', unit: '%', points: ppl.map((p) => ({ label: p, value: r((BUDGET[p].fc / BUDGET[p].b) * 100) })) },
+      table: { title: 'Billing by individual', columns: ['Individual', 'Invoiced', 'Paid', 'Outstanding', 'Forecast', 'Forecast vs budget'],
+        rows: ppl.map((p) => { const x = BUDGET[p]; return [p, gbp(x.inv), gbp(x.paid), gbp(x.inv - x.paid), gbp(x.fc), pct(x.fc / x.b)]; }) },
+    };
+  }
+
+  // ---------- Delivery ----------
+  private liveView(level: string): ViewDef {
+    const as = this.assignmentsFor(level);
+    return {
+      title: `Live searches: ${level}`,
+      subtitle: 'Live search assignments from Ezekia with team, start date, progress and target end date.',
+      kpis: [
+        { label: 'Live searches', value: String(as.length) },
+        { label: 'Started this quarter', value: String(as.filter((a) => /(Sep|Oct|Nov) 2026/.test(a.start)).length) },
+        { label: 'Avg completion', value: as.length ? r(as.reduce((x, a) => x + a.completion, 0) / as.length) + '%' : '-' },
+        { label: 'Due in next 30 days', value: String(as.filter((a) => /Nov 2026/.test(a.end) && parseInt(a.end) <= 25).length) },
+      ],
+      chart: { kind: 'bar', title: 'Live searches by team', unit: 'searches',
+        points: Object.keys(TEAMS).map((t) => ({ label: t, value: as.filter((a) => HOME_TEAM[a.owner] === t).length })) },
+      table: { title: 'Live searches', columns: ['Assignment', 'Client', 'Team', 'Owner', 'Start date', 'Target end', 'Completion'],
+        rows: as.map((a) => [a.name, a.client, HOME_TEAM[a.owner], a.owner, a.start, a.end, a.completion + '%']) },
+    };
+  }
+  private shortlistView(level: string): ViewDef {
+    const cl = this.closedFor(level); const live = this.assignmentsFor(level).filter((a) => a.dts !== null);
+    const all = [...cl.map((c) => ({ sl: c.sl, dts: c.dts })), ...live.map((a) => ({ sl: a.sl, dts: a.dts as number }))];
+    const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+    const placed = cl.filter((c) => c.placed);
+    const rate = cl.length ? (placed.length / cl.length) * 100 : 0;
+    return {
+      notice: this.assumeNotice,
+      title: `Shortlist and placement: ${level}`,
+      subtitle: 'Shortlist and placement by assignment. Dates come from revenue entries with status “Shortlist” and “Placement”. Averages are shown against budget assumptions.',
+      kpis: [
+        { label: 'Avg shortlist size', value: avg(all.map((a) => a.sl)).toFixed(1), delta: `Budget assumption ${ASSUME.shortlist}`, trend: 'flat' },
+        { label: 'Avg days to shortlist', value: String(r(avg(all.map((a) => a.dts)))), delta: `Budget assumption ${ASSUME.dts}`, trend: 'flat' },
+        { label: 'Avg days to placement', value: String(r(avg(placed.map((c) => c.dtp as number)))), delta: `Budget assumption ${ASSUME.dtp}`, trend: 'flat' },
+        { label: 'Placement rate', value: r(rate) + '%', delta: `Budget assumption ${ASSUME.rate}%`, trend: 'flat' },
+      ],
+      chart: { kind: 'bar', title: 'Days to shortlist by assignment', unit: 'days',
+        points: [...live.map((a) => ({ label: `${a.client} (${a.name.replace(' search', '')})`, value: a.dts as number })), ...cl.map((c) => ({ label: `${c.client} (${c.name.replace(' search', '')})`, value: c.dts }))] },
+      table: { title: 'Shortlist and placement by assignment', columns: ['Assignment', 'Client', 'Shortlist', 'Days to shortlist', 'Placed', 'Days to placement'],
+        rows: [...live.map((a) => [a.name, a.client, String(a.sl), String(a.dts), 'In progress', '-']),
+          ...cl.map((c) => [c.name, c.client, String(c.sl), String(c.dts), c.placed ? 'Yes' : 'No', c.dtp === null ? '-' : String(c.dtp)])] },
+    };
+  }
+  private npsView(level: string): ViewDef {
+    const cl = this.closedFor(level).filter((c) => c.nps !== null);
+    const avg = cl.length ? r(cl.reduce((a, c) => a + (c.nps as number), 0) / cl.length) : 0;
+    return {
+      notice: { kind: 'pending', text: 'The NPS data source is not yet confirmed. Scores shown here are illustrative.' },
+      title: `NPS: ${level}`,
+      subtitle: 'Client NPS score by completed assignment, with the average against the budget assumption.',
+      kpis: [
+        { label: 'Average NPS', value: String(avg), delta: `Budget assumption ${ASSUME.nps}`, trend: 'flat' },
+        { label: 'Assignments scored', value: String(cl.length) },
+        { label: 'Highest', value: cl.length ? String(Math.max(...cl.map((c) => c.nps as number))) : '-' },
+        { label: 'Lowest', value: cl.length ? String(Math.min(...cl.map((c) => c.nps as number))) : '-' },
+      ],
+      chart: { kind: 'bar', title: 'NPS by assignment', unit: 'score', points: cl.map((c) => ({ label: `${c.client} (${c.name.replace(' search', '')})`, value: c.nps as number })) },
+      table: { title: 'NPS by assignment', columns: ['Assignment', 'Client', 'Owner', 'Closed', 'NPS'],
+        rows: cl.map((c) => [c.name, c.client, c.owner, c.closed, String(c.nps)]) },
+    };
+  }
+  private capacityView(level: string): ViewDef {
+    const ppl = peopleForLevel(level); const as = this.assignmentsFor(level);
+    const ko = KICKOFFS.filter((k) => ppl.includes(k.owner));
+    return {
+      notice: { kind: 'info', text: 'Delivery capacity shows live work and upcoming kick-offs. It will be refined with Praeva after the build.' },
+      title: `Delivery capacity: ${level}`,
+      subtitle: 'Live searches per person and assignments due to kick off, against the budget assumption for live searches per person.',
+      kpis: [
+        { label: 'Live searches', value: String(as.length) }, { label: 'Kick-offs in next 30 days', value: String(ko.length) },
+        { label: 'Avg live searches per person', value: ppl.length ? (as.length / ppl.length).toFixed(1) : '-', delta: `Budget assumption ${ASSUME.live}`, trend: 'flat' },
+      ],
+      chart: { kind: 'bar', title: 'Live searches per person', unit: 'searches', points: ppl.map((p) => ({ label: p, value: as.filter((a) => a.owner === p).length })) },
+      table: { title: 'Capacity by person', columns: ['Person', 'Team', 'Live searches', 'Kick-offs in 30 days', 'Next kick-off'],
+        rows: ppl.map((p) => { const k = ko.filter((x) => x.owner === p); return [p, HOME_TEAM[p], String(as.filter((a) => a.owner === p).length), String(k.length), k[0] ? `${k[0].start} (${k[0].client})` : '-']; }) },
     };
   }
   private wipView(level: string): ViewDef {

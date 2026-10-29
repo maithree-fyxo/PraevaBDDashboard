@@ -7,7 +7,7 @@ import { Notice } from '../core/data.service';
   template: `
     @if (notice) {
       <p class="note" [attr.data-k]="notice.kind">
-        <strong>{{ notice.kind === 'pending' ? 'Waiting on data' : 'Assumption' }}</strong>
+        <strong>{{ notice.kind === 'pending' ? 'Waiting on data' : notice.kind === 'info' ? 'Note' : 'Assumption' }}</strong>
         <span>{{ notice.text }}</span>
       </p>
     }
@@ -17,6 +17,8 @@ import { Notice } from '../core/data.service';
       border-radius: var(--r-sm); font-size: 12.5px; line-height: 1.5; color: var(--text-muted);
       background: color-mix(in srgb, var(--warn) 10%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 28%, transparent); }
     .note[data-k="pending"] { background: var(--surface-2); border-color: var(--border-strong); }
+    .note[data-k="info"] { background: color-mix(in srgb, var(--c-sky) 9%, transparent); border-color: color-mix(in srgb, var(--c-sky) 28%, transparent); }
+    .note[data-k="info"] strong { color: color-mix(in srgb, var(--c-sky) 80%, var(--text)); }
     strong { font-size: 12px; font-weight: 700; color: var(--warn); white-space: nowrap; }
     .note[data-k="pending"] strong { color: var(--text); }
     span { flex: 1 1 320px; max-width: 110ch; }

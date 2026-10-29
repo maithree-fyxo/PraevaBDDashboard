@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { FilterService } from '../core/filter.service';
+import { RoleService } from '../core/role.service';
 import { ALL, COMPANY_TYPES, ROLE_CLASSES, SECTOR_NAMES, SENIORITY } from '../core/reference';
 
 @Component({
@@ -43,6 +44,9 @@ import { ALL, COMPANY_TYPES, ROLE_CLASSES, SECTOR_NAMES, SENIORITY } from '../co
           @for (o of f.subsectorOptions(); track o) { <option [value]="o" [selected]="o === f.subsector()">{{ o }}</option> }
         </select>
       </label>
+      @if (access.scopeLabel(); as team) {
+        <span class="scope">Showing your team: {{ team }}</span>
+      }
       @if (f.active()) {
         <button class="reset" type="button" (click)="f.reset()">Clear filters</button>
       }
@@ -63,11 +67,14 @@ import { ALL, COMPANY_TYPES, ROLE_CLASSES, SECTOR_NAMES, SENIORITY } from '../co
     .reset { appearance: none; border: 1px solid var(--accent-line); background: var(--accent-soft); color: var(--accent-strong);
       font: inherit; font-size: 12.5px; font-weight: 600; padding: 7px 12px; border-radius: var(--r-sm); cursor: pointer; }
     .reset:hover { background: var(--accent-line); }
+    .scope { align-self: flex-end; font-size: 12px; font-weight: 600; padding: 7px 10px; border-radius: var(--r-sm);
+      background: color-mix(in srgb, var(--c-indigo) 12%, transparent); color: color-mix(in srgb, var(--c-indigo) 80%, var(--text)); }
     @media (max-width: 860px) { .bar { padding: 12px 16px; } .f { max-width: none; } }
   `],
 })
 export class FilterBarComponent {
   f = inject(FilterService);
+  access = inject(RoleService);
   all = ALL;
   companyTypes = COMPANY_TYPES; roles = ROLE_CLASSES; seniority = SENIORITY; sectors = SECTOR_NAMES;
   val(e: Event) { return (e.target as HTMLSelectElement).value; }

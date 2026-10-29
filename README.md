@@ -21,32 +21,27 @@ Angular project.
 
 ## What's in it
 
-- **Workspace switcher** under the Praeva logo: Business Development, Finance and Delivery. Finance
-  and Delivery show a "Not yet scoped" page. The logo turns white in dark mode.
-- **Colour:** pink stays the main accent (navigation, primary card, buttons). Charts, cards and status
-  tags use a wider palette defined in `styles.css` (`--c-*` tokens) and `ui/palette.ts`.
-- **Sidebar** with eight categories: Overview, Meeting activity, Follow-up & outcomes,
-  Opportunity pipeline, Target funds, Cross-sell, Delivery & budget, and Views. Sub-views are
-  tabs within each category page.
-- **Global filters** (shown on BD activity pages): Company type, Role classification,
-  Seniority (Management only), Primary sector and cascading Subsector, plus the Period
-  selector in the top bar.
-  - Company type = counterparty company's Relationship Type custom field (each value its own
-    category, plus Uncoded).
-  - Role classification + seniority = the person's Current Status career, mapped to a role
-    class (most senior wins).
-  - Primary sector / Subsector = company custom fields; Subsector options cascade from Sector.
-- **Overview**: KPIs, meetings by company type and by role classification, the company type ×
-  role classification matrix, and a delivery and budget snapshot. A last updated time shows in the top bar.
-- **Target funds**: last contact by fund, funds needing contact, coverage by owner, at Praeva,
-  team or individual level.
-- **Cross-sell**: live work across funds and their portfolio companies, and meeting → lead
-  conversion by team and company (pending HelloSky relationships).
-- **Delivery & budget**: delivery summary, budget against invoiced / paid / forecast, and search
-  work in progress by milestone.
-- **Views**: Team, Individual, Sector (driven by the global sector filters) and Company.
-- BD meetings and originators come from user-specific BD tags (for example "BD - Mark Sherman").
-  The Cross-sell page carries a **Waiting on data** note until HelloSky relationships are in Ezekia.
+- **Navigation:** Overview, Financial, Business Development (an expandable group: Summary, Meeting
+  activity, Follow-up & outcomes, Opportunities, Target funds, Cross-sell, Views), Delivery, and an
+  Admin group (Budget input, User management).
+- **Roles:** Member, Team leader and Super admin. A "Prototype: viewing as" selector in the sidebar
+  footer switches between them. Members see their own team's BD activity and no Financial or Admin
+  pages. Team leaders see all Praeva BD and Delivery data, their own teams' financials, and Budget
+  input for their teams. Super admins see everything, including User management.
+- **Overview:** headline measures per area (invoiced and WIP against budget, target accounts
+  converted, NPS) and key deadlines in the next 30 days (target end dates, kick-offs, shortlist due
+  dates from revenue entries with status "Shortlist").
+- **Financial:** revenue against budget (invoiced and work in progress) and billing.
+- **Business Development:** global filters (company type, role classification, seniority, primary
+  sector, subsector) on the activity pages. Meetings link to opportunities through the attached
+  opportunity first, otherwise by client company.
+- **Delivery:** live searches, shortlist and placement, NPS, capacity and work in progress, each
+  against budget assumptions where relevant.
+- **Admin:** Budget input (values still to be confirmed) and User management (roles, office-group
+  teams, Ezekia user link, BD tag, activation).
+- **Colour:** pink stays the main accent; charts, cards and tags use the `--c-*` palette in
+  `styles.css` and `ui/palette.ts`. The Praeva logo turns white in dark mode.
+- Pages that depend on pending data carry an on-screen **Waiting on data** or **Note** message.
 
 ## Structure
 
@@ -59,11 +54,15 @@ src/
       filter.service.ts         Global filter state (signals) and the filtered company type × role matrix
       scale.ts                  Scales illustrative views to the active filters
       data.service.ts           Mock data and view builders — the single place to swap in real data
-      nav.ts                    Sidebar categories and tabs
+      nav.ts                    Sidebar categories, groups and tabs
+      role.service.ts           Roles, mock users and what each role can see
       theme.service.ts          Light/dark signal, persistence, OS preference
     ui/                         stat card, charts, tables, filter bar, matrix, notice
     pages/
-      overview.component.ts     Overview
+      overview.component.ts     Cross-area Overview
+      bd-summary.component.ts   Business Development summary
+      budget-input.component.ts Admin budget input
+      user-management.component.ts  Super-admin user management
       category-page.component.ts  Tabbed page used by every other category
     app.component.ts            Shell: sidebar, top bar, filter bar, outlet
     app.routes.ts               One route per category
